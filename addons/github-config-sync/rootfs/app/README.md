@@ -5,7 +5,7 @@
 [![HASSfest](https://img.shields.io/badge/HASSfest-validated-success.svg)](https://developers.home-assistant.io/docs/add-ons/)
 [![Release](https://img.shields.io/github/v/tag/TheBlackMini/GithubConfigSync?label=release)](https://github.com/TheBlackMini/GithubConfigSync/releases)
 
-Home Assistant add-on for syncing your Home Assistant configuration to a GitHub repository. This is a configuration sync tool, not a backup tool. Originally created by [MJP-76](https://github.com/MJP-76), now maintained by [TheBlackMini](https://github.com/TheBlackMini).
+Home Assistant add-on for syncing your Home Assistant configuration to a GitHub repository. This is a configuration sync tool, not a backup tool. A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConfigSync) by [MJP-76](https://github.com/MJP-76), with personal modifications by [TheBlackMini](https://github.com/TheBlackMini).
 
 > **Warning:** Use caution with public repositories and with any two-way sync or other tools that can also write to the Home Assistant config tree, because they can cause local config loss or unexpected deletions.
 

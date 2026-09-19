@@ -11,7 +11,7 @@
 
 Home Assistant **add-on** for syncing your config folder to GitHub. This is a config sync tool, not a backup tool.
 
-Originally created under the `MJP-76` account, now maintained by [TheBlackMini](https://github.com/TheBlackMini).
+A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConfigSync) by [MJP-76](https://github.com/MJP-76), with personal modifications by [TheBlackMini](https://github.com/TheBlackMini).
 
 **Private repositories are strongly recommended.** Use caution with public repos and any two-way sync tools that also write to your Home Assistant config tree — they can cause local config loss or unexpected deletions.
 
