@@ -16,10 +16,13 @@ configuration:
       fine-grained PAT here to override. Stored encrypted at rest and masked
       in the UI.
   github_client_id:
-    name: GitHub OAuth App Client ID
+    name: GitHub App / OAuth Client ID
     description: >-
-      OAuth client ID used for the GitHub Device Flow login. Override only to
-      use your own OAuth app; most users keep the default.
+      OAuth client ID used for the GitHub Device Flow login. For the recommended
+      GitHub App authentication method, paste the Client ID of your own GitHub App
+      (created under Settings > Developer settings > GitHub Apps); no client secret
+      is needed for the device flow. Override only to use your own OAuth app;
+      most users keep the default for the classic Device Flow.
   scheduler_timezone:
     name: Scheduler timezone
     description: >-

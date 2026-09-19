@@ -4,16 +4,18 @@ All settings can be edited in the add-on **web UI** (open it with the **Open Web
 
 ## Web UI sections
 
+The web UI opens as a **setup wizard** (Connect GitHub → Repository → What to sync → Schedule & safety → Review). Once a repository and token are configured it switches to the settings view, where each section has its own **Save** button and a **Re-run wizard** option restarts the guided flow.
+
 | Section | Purpose |
 |---|---|
-| 1. GitHub Device Login | Device Flow login or fine-grained PAT |
-| 2. Repository setup | Load an existing repository or create a new one |
-| 3. Advanced options | Manual repository, branch, token, and OAuth client ID (toggled) |
-| 4. Scheduled sync | Automatic daily/weekly sync (web UI only) |
-| 5. Sync scope | Mode, patterns, pre-commit gate, log level |
-| 6. Mount points | Wholesale folders (`/media`, `/share`, …) |
-| 7. Recommended .gitignore | One-click ignore defaults |
-| 8. Dry run | Preview without pushing |
+| 1. Connect GitHub | Device Flow via your own GitHub App, the default OAuth app, or a fine-grained PAT |
+| 2. Repository setup | Load an existing repository or create a new one (owner/repo + branch) |
+| 3. Sync scope | Mode, patterns, pre-commit gate, log level |
+| 4. Mount points | Wholesale folders (`/media`, `/share`, …) |
+| 5. Recommended .gitignore | One-click ignore defaults |
+| 6. Scheduled sync | Automatic daily/weekly sync (web UI only) |
+| 7. Dry run | Preview without pushing |
+| 8. Documentation | Pointers to the full docs |
 
 ## Option reference
 
@@ -22,7 +24,7 @@ All settings can be edited in the add-on **web UI** (open it with the **Open Web
 | `github_repository` | _empty_ | `TheBlackMini/home-assistant-config` | Target repository (`owner/repo`), set by the picker. |
 | `github_branch` | `main` | `main` | Branch to push to. |
 | `github_token` | _empty_ | set by Device Flow | Encrypted at rest; masked in the UI. |
-| `github_client_id` | default OAuth app | `Ov23liAbCdEfGhIjKlM` | OAuth client ID for Device Flow. |
+| `github_client_id` | default OAuth app | `Ov23liAbCdEfGhIjKlM` | OAuth app client ID for Device Flow. Also the required **Client ID of your own GitHub App** when `auth_method` is `github_app` (no client secret needed). |
 | `scheduler_timezone` | server local | `Europe/Berlin` | IANA timezone for scheduled sync. |
 | `sync_include_patterns` | `*.yaml`, `*.json`, … | `packages\n*.yaml` | Allow-list patterns (`whitelist` mode). |
 | `sync_exclude_patterns` | _empty_ | `home-assistant.log` | Never-sync patterns. |
@@ -41,14 +43,15 @@ All settings can be edited in the add-on **web UI** (open it with the **Open Web
 
 ## Scheduled sync
 
-Scheduled sync runs inside the add-on and is configured **only in the web UI** (section 4) — `auto_sync_days`, `auto_sync_time`, and `auto_sync_create_release` are not part of `config.yaml` and do not appear in the HA Configuration tab.
+Scheduled sync runs inside the add-on and is configured **only in the web UI** (Scheduled sync section) — `auto_sync_days`, `auto_sync_time`, and `auto_sync_create_release` are not part of `config.yaml` and do not appear in the HA Configuration tab.
 
 Enable it, pick days and a time, optionally create a dated release before each sync, and set the retention count. The scheduler runs in the add-on background (24/7 timer) and honors `scheduler_timezone`.
 
 ## Authentication
 
+- **GitHub App** (recommended) — create your own GitHub App (Settings → Developer settings → GitHub Apps), set repository permissions to **Metadata: Read-only** and **Contents: Read and write**, opt in to the **device flow**, install it on the repository(ies) you sync, and paste its **Client ID** into the connect step. GitHub shows the name you gave the app, never a third party's. No client secret is stored — the device flow needs only the Client ID.
 - **Device Flow** (default) — click **Start Device Login**; confirm the code on GitHub. The token is saved automatically.
-- **Fine-grained PAT** — paste a PAT scoped to the target repository (Contents: Read and write) under **Advanced options → GitHub token**.
+- **Fine-grained PAT** — paste a PAT scoped to the target repository (Contents: Read and write) in the connect step; device login is not used.
 
 ## Logging
 

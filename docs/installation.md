@@ -10,13 +10,15 @@
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories**.
 2. Add this repository URL: `https://github.com/TheBlackMini/GithubConfigSync`.
 3. Install **Github Config Sync** and start it.
-4. Open the app web UI (ingress), configure repository settings, and complete
-   GitHub Device Flow login.
+4. Open the app web UI (ingress) and follow the **setup wizard**: connect GitHub
+   (Device Flow via your own GitHub App, the default OAuth app, or a fine-grained
+   PAT), pick a repository, choose the sync scope, then review.
 
 ## Getting started
 
 1. Open the app UI from the Add-on page.
-2. Complete GitHub Device Flow login.
+2. Complete the GitHub connect step (the wizard walks you through authorizing —
+   see [Configuration → Authentication](configuration.md#authentication)).
 3. Pick an existing repository or create a new one.
 4. Run a **dry run** first to confirm the scan looks correct.
 5. Switch to a **live run** when ready.

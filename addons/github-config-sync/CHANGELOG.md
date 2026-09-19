@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.7.0
+
+- **Feature**: New least-privilege auth method — use your own GitHub App (device flow, Client ID only, no client secret): it asks only for Metadata (read-only) and Contents (read and write) on repositories you choose, and GitHub shows the app name you set instead of the maintainer's default.
+- **Feature**: Web UI is now a setup wizard (Connect GitHub → Repository → What to sync → Schedule & safety → Review) with per-section save buttons in the settings view and a "Re-run wizard" option; the old auto-save-on-every-keystroke (which snapped the page back to the top on refresh) is gone.
+- **Feature**: Dark mode follows the Home Assistant/system theme by default, with a Theme toggle (Auto / Light / Dark) in the header.
+- **Fix**: Recommended .gitignore entries render beside their checkboxes instead of being right-aligned.
+- **Fix**: The Stable/Dev version boxes were removed from the top of the page — the installed version stays in the header badge.
+
 ## 1.6.2
 
 - **Chore**: Version bumps now promote the top "Unreleased" changelog section into the released version, keeping the repo-root, add-on, and app changelogs in sync (via `scripts/sync_versions.py`).

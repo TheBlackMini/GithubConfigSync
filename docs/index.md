@@ -17,7 +17,8 @@ a **config sync tool, not a backup tool**.
 
 ## What this add-on does
 
-- GitHub OAuth Device Flow login (approve on github.com)
+- GitHub authentication with least privilege: your own GitHub App (device flow), the default OAuth Device Flow, or a fine-grained PAT
+- Wizard-style setup and per-section reconfiguration with a dark-mode UI
 - Create a new repository or use an existing one
 - Sync your Home Assistant config folder to GitHub
 - Auto-generate a Home Assistant-friendly `.gitignore`

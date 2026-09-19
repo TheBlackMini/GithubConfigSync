@@ -16,15 +16,16 @@ A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConf
 **Private repositories are strongly recommended.** Use caution with public repos and any two-way sync tools that also write to your Home Assistant config tree — they can cause local config loss or unexpected deletions.
 
 <!-- VERSION:START -->
-- Integration version: `1.6.2`
-- Add-on version: `1.6.2`
+- Integration version: `1.7.0`
+- Add-on version: `1.7.0`
 - Channel: `stable`
-- Release tag: `v1.6.2`
+- Release tag: `v1.7.0`
 <!-- VERSION:END -->
 
 ## Features
 
-- GitHub OAuth Device Flow login (approve on github.com)
+- GitHub authentication with least privilege: your own GitHub App (device flow), the default OAuth Device Flow, or a fine-grained PAT
+- Wizard-style setup with a dark-mode UI and per-section reconfiguration
 - Create a new repository or use an existing one
 - Sync your Home Assistant config folder to GitHub
 - Auto-generate a Home Assistant-friendly `.gitignore`
@@ -44,12 +45,12 @@ A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConf
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories**.
 2. Add this repository URL: `https://github.com/TheBlackMini/GithubConfigSync`.
 3. Install **Github Config Sync** and start it.
-4. Open the app web UI (ingress), configure repository settings, and complete GitHub Device Flow login.
+4. Open the app web UI (ingress) and follow the setup wizard: connect GitHub (Device Flow via your own GitHub App, the default OAuth app, or a fine-grained PAT), pick a repository, choose the sync scope, then review.
 
 ## Getting Started
 
 1. Open the app UI from the Add-on page.
-2. Complete GitHub Device Flow login.
+2. Complete the GitHub connect step (the wizard walks you through authorizing).
 3. Pick an existing repository or create a new one.
 4. Run a dry run first to confirm the scan looks correct.
 5. Switch to a live run when ready.

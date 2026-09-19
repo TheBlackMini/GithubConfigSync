@@ -7,6 +7,22 @@ and is published per version on
 Home Assistant update page shows only the changes between the user's version and the
 update. The last 5 releases are kept at the top, per the project's changelog rules.
 
+## 1.7.0
+
+- **Feature**: New least-privilege auth method — use your own GitHub App (device flow,
+  Client ID only, no client secret). The app asks only for Metadata (read-only) and
+  Contents (read and write) on the repositories you select, and GitHub shows the app
+  name you set instead of the maintainer's default (`auth_method: github_app`)
+- **Feature**: Web UI is now a setup wizard (Connect GitHub → Repository → What to sync
+  → Schedule & safety → Review) with per-section save buttons and a "Re-run wizard"
+  option; auto-save-on-every-keystroke is gone
+- **Feature**: Dark mode follows the Home Assistant/system theme by default, with a
+  Theme toggle (Auto / Light / Dark) in the header
+- **Fix**: Recommended .gitignore entries render beside their checkboxes instead of
+  being right-aligned
+- **Fix**: The Stable/Dev version boxes were removed from the top of the page — the
+  installed version stays in the header badge
+
 ## 1.6.2
 
 - **Chore**: Version bumps now promote the top `## Unreleased` changelog section into

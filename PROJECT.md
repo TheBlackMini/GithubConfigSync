@@ -7,10 +7,10 @@ Single source of truth for project status, architecture, security, and workflow.
 ## Current Status
 
 <!-- VERSION:START -->
-- Integration version: `1.6.2`
-- Add-on version: `1.6.2`
+- Integration version: `1.7.0`
+- Add-on version: `1.7.0`
 - Channel: `stable`
-- Release tag: `v1.6.2`
+- Release tag: `v1.7.0`
 <!-- VERSION:END -->
 - **Last updated:** 2026-08-07
 - **Repo:** `TheBlackMini/GithubConfigSync` (single repo, `main` = stable, `dev` = development)
@@ -31,7 +31,7 @@ Home Assistant integration that provides config flow for GitHub token setup, but
 
 Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 
-- OAuth Device Flow for GitHub authentication
+- OAuth Device Flow for GitHub authentication (default app or your own GitHub App)
 - Repository management (list, create, adopt)
 - Config sync (upload, clean-upload, clean-repo)
 - Settings persistence via HA options API
@@ -68,7 +68,7 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 
 ## Product Decisions
 
-- Device Flow is the default auth path for both integration and add-on UX.
+- Device Flow is the default auth path for both integration and add-on UX; the add-on recommends a **user-owned GitHub App** (`auth_method: github_app`) for least-privilege, per-repository access without a maintainer-embedded client secret.
 - Token/client ID should not be front-and-center for normal users.
 - Repository selection is guided (picker/create) instead of manual-only typing.
 - The Add-on Store is the supported distribution path; the legacy HACS integration is kept only to redirect installs to the add-on.
@@ -205,6 +205,14 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 ### Next (Unreleased)
 
 - (nothing yet)
+
+### v1.7.0 — Wizard UI & GitHub App Auth
+
+- **Feature**: New least-privilege `auth_method: github_app` — user-owned GitHub App via device flow (Client ID only, no client secret); asks only for Metadata (read-only) and Contents (read and write) on the repositories the user selects, and GitHub shows the app name the user chose instead of the maintainer's default; requires a non-default `github_client_id`
+- **Feature**: Web UI rework — wizard-style setup (Connect GitHub → Repository → What to sync → Schedule & safety → Review), per-section save buttons in the settings view, "Re-run wizard"; auto-save-on-every-keystroke removed (fixes the focus snap during periodic refreshes)
+- **Feature**: Dark mode follows the Home Assistant/system theme with a Theme toggle (Auto / Light / Dark) in the header
+- **Fix**: Recommended .gitignore entries render beside their checkboxes instead of right-aligned
+- **Fix**: Stable/Dev version boxes removed from the top of the page; version stays in the header badge
 
 ### v1.5.0–v1.5.4 — Security Hardening & Token Sync Fix
 

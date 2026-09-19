@@ -46,11 +46,10 @@ class GitHubClient:
         return headers
 
     def start_device_flow(self, client_id: str, scope: str = "repo") -> dict[str, Any]:
-        return self._oauth_request(
-            "POST",
-            "/login/device/code",
-            payload={"client_id": client_id, "scope": scope},
-        )
+        payload = {"client_id": client_id}
+        if scope:
+            payload["scope"] = scope
+        return self._oauth_request("POST", "/login/device/code", payload=payload)
 
     def exchange_device_code(
         self, client_id: str, device_code: str, interval: int = 5, timeout: int = 600
