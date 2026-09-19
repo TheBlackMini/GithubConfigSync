@@ -47,6 +47,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Configuration: configuration.md
   - Syncing: syncing.md
   - Project guide: project-guide.md
   - Changelog: changelog.md

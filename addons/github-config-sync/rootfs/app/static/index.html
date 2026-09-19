@@ -287,8 +287,38 @@
         overflow: auto;
       }
 
+      .mount-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .mount-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        background: var(--card-2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+
+      .mount-item .mount-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 0.9rem;
+      }
+
+      .mount-item .mount-path {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
       @media (max-width: 780px) {
-        .grid {
+        .grid,
+        .mount-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -342,13 +372,6 @@
                 <option value="fine_grained_pat">Fine-grained PAT (Security Focused)</option>
               </select>
             </div>
-            <div class="field" style="margin-bottom: 10px">
-              <label for="githubClientId">GitHub OAuth App Client ID (Device Flow)</label>
-              <input id="githubClientId" placeholder="Ov23li..." />
-              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
-                Optional. Overrides the default GitHub OAuth app used for Device Flow login.
-              </p>
-            </div>
             <p id="authMethodHelp" class="subtle" style="margin-bottom: 10px"></p>
             <div class="row" id="deviceLoginRow">
               <button id="startDeviceBtn" class="secondary">Start Device Login</button>
@@ -385,12 +408,20 @@
             <div id="createRepoSection" style="margin-top: 12px; display: none">
               <div class="grid">
                 <div class="field">
-                  <label for="newRepoName">New repository name (default: ha-github-config-sync)</label>
+                  <label for="newRepoName">New repository name</label>
                   <input id="newRepoName" placeholder="ha-github-config-sync" value="ha-github-config-sync" />
+                  <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                    Git-friendly name, lowercase with dashes. Default: <code>ha-github-config-sync</code>.
+                    Example: <code>home-assistant-config</code>.
+                  </p>
                 </div>
                 <div class="field">
-                  <label for="newRepoDescription">Description (defaults to the repo name with spaces)</label>
+                  <label for="newRepoDescription">Description</label>
                   <input id="newRepoDescription" placeholder="Home Assistant config sync" />
+                  <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                    Shown on the repository page. Defaults to the repo name with spaces.
+                    Example: <code>My Home Assistant configuration</code>.
+                  </p>
                 </div>
               </div>
               <div class="row" style="margin-top: 12px">
@@ -398,19 +429,51 @@
                 <button id="createRepoBtn" class="secondary">Create Repository</button>
               </div>
             </div>
+            <p class="subtle" id="repoTargetSummary" style="margin: 12px 0 0"></p>
           </div>
         </details>
-        <details id="targetRepoSection" style="margin-top: 12px" open>
-          <summary style="cursor: pointer; color: var(--muted)">3. Target repository</summary>
+        <details id="advancedSection" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">3. Advanced options</summary>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+            <div class="row" style="margin-bottom: 4px">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+                <input id="showAdvanced" type="checkbox" />
+                <strong>Show advanced GitHub settings (manual repository, branch, token, OAuth client)</strong>
+              </label>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 10px">
+              The options below are set automatically by Device Login and the repository picker. You normally only
+              need them to switch to a fine-grained PAT, point at a different branch, or use your own OAuth app.
+              They are stored in the add-on configuration and stay encrypted at rest.
+            </p>
             <div class="grid">
               <div class="field">
                 <label for="repo">Target repository (owner/repo)</label>
-                <input id="repo" placeholder="TheBlackMini/GithubConfigSync" />
+                <input id="repo" placeholder="TheBlackMini/home-assistant-config" />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  GitHub repository to sync to, formatted <code>owner/repo</code>. Set by the repository picker above.
+                </p>
               </div>
               <div class="field">
                 <label for="branch">Target branch</label>
                 <input id="branch" placeholder="main" />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Branch in the repository files are pushed to. Defaults to <code>main</code>.
+                </p>
+              </div>
+              <div class="field">
+                <label for="githubToken">GitHub token</label>
+                <input id="githubToken" type="password" placeholder="XXXX" autocomplete="off" />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Set automatically by Device Login. Paste a fine-grained PAT here to overwrite it. Leave empty to keep the saved token.
+                </p>
+              </div>
+              <div class="field">
+                <label for="githubClientId">GitHub OAuth App Client ID (Device Flow)</label>
+                <input id="githubClientId" placeholder="Ov23li..." />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Optional. Overrides the default GitHub OAuth app used for Device Flow login. Example: <code>Ov23liAbCdEfGhIjKlM</code>.
+                </p>
               </div>
             </div>
           </div>
@@ -465,12 +528,21 @@
               <div class="field">
                 <label for="versionRetention">Keep versions on GitHub</label>
                 <input id="versionRetention" type="number" min="1" max="100" />
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">Number of GitHub releases to retain</p>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  How many dated auto-releases to keep on GitHub (1-100); older ones are pruned.
+                  Example: <code>7</code> keeps a week's worth of daily syncs.
+                </p>
               </div>
               <div class="field">
                 <label for="schedulerTimezone">Scheduler timezone (IANA)</label>
-                <input id="schedulerTimezone" placeholder="Europe/Berlin" />
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">Optional; defaults to the server's local timezone</p>
+                <div class="row">
+                  <input id="schedulerTimezone" placeholder="Europe/London" style="flex: 1; min-width: 180px" />
+                  <button id="useHaTzBtn" class="secondary" type="button">Use Home Assistant timezone</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Optional. If empty, the scheduler uses the server's local timezone. Home Assistant's timezone
+                  is <span id="haTimeZoneValue">unknown</span>. Example: <code>Europe/Berlin</code>, <code>America/New_York</code>.
+                </p>
               </div>
             </div>
           </div>
@@ -504,6 +576,19 @@
               which is included on amd64/aarch64.
             </p>
             <div class="field" style="margin-top: 10px">
+              <label for="logLevel">Log level</label>
+              <select id="logLevel" style="max-width: 260px;">
+                <option value="DEBUG">DEBUG — detailed request tracing</option>
+                <option value="INFO">INFO — default</option>
+                <option value="WARN">WARN — problems only</option>
+                <option value="ERROR">ERROR — errors only</option>
+              </select>
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                Controls how much detail is logged for GitHub and Home Assistant API calls. Below DEBUG, each request
+                is still logged without credentials; all logs appear in the add-on log.
+              </p>
+            </div>
+            <div class="field" style="margin-top: 10px">
               <label for="syncIncludePatterns">Include patterns (each on its own line, one per line)</label>
               <textarea id="syncIncludePatterns" rows="6" spellcheck="false"
                 placeholder="*.yaml&#10;*.json&#10;themes&#10;packages"></textarea>
@@ -530,13 +615,52 @@
         </details>
         <details id="mountPointsSection" style="margin-top: 12px">
           <summary style="cursor: pointer; color: var(--muted)">6. Mount points to sync</summary>
-          <div class="grid" style="margin-top: 10px">
-            <label><input id="includeAddonConfigs" type="checkbox" /> Include /addon_configs</label>
-            <label><input id="includeMedia" type="checkbox" /> Include /media</label>
-            <label><input id="includeShare" type="checkbox" /> Include /share</label>
-            <label><input id="includeSsl" type="checkbox" /> Include /ssl</label>
-            <label><input id="includeBackups" type="checkbox" /> Include /backup or /backups</label>
-            <label><input id="includeWww" type="checkbox" /> Include /www</label>
+          <p class="subtle" style="margin-top: 10px">
+            Synced mounts are imported wholesale into their own folder of the repository, outside the config allow-list.
+          </p>
+          <div class="mount-grid" style="margin-top: 10px">
+            <label class="mount-item">
+              <input id="includeAddonConfigs" type="checkbox" />
+              <span class="mount-text">
+                Include /addon_configs
+                <span class="mount-path">Synced into <code>addon_configs/</code> in the repo.</span>
+              </span>
+            </label>
+            <label class="mount-item">
+              <input id="includeMedia" type="checkbox" />
+              <span class="mount-text">
+                Include /media
+                <span class="mount-path">Synced into <code>media/</code> in the repo.</span>
+              </span>
+            </label>
+            <label class="mount-item">
+              <input id="includeShare" type="checkbox" />
+              <span class="mount-text">
+                Include /share
+                <span class="mount-path">Synced into <code>share/</code> in the repo.</span>
+              </span>
+            </label>
+            <label class="mount-item">
+              <input id="includeSsl" type="checkbox" />
+              <span class="mount-text">
+                Include /ssl
+                <span class="mount-path">Synced into <code>ssl/</code> in the repo.</span>
+              </span>
+            </label>
+            <label class="mount-item">
+              <input id="includeBackups" type="checkbox" />
+              <span class="mount-text">
+                Include /backup or /backups
+                <span class="mount-path">Synced into <code>backups/</code> in the repo.</span>
+              </span>
+            </label>
+            <label class="mount-item">
+              <input id="includeWww" type="checkbox" />
+              <span class="mount-text">
+                Include /www
+                <span class="mount-path">Synced into <code>www/</code> in the repo.</span>
+              </span>
+            </label>
           </div>
         </details>
         <details id="gitignoreSection" style="margin-top: 12px">
@@ -571,11 +695,42 @@
             </p>
           </div>
         </details>
+        <details id="docsSection" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">9. Documentation</summary>
+          <div style="margin-top: 10px">
+            <p class="subtle" style="margin-bottom: 10px">
+              Everything is configured from this page &mdash; nothing needs to be typed by hand. The sections above work
+              together, left to right:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 0.9rem; color: var(--muted); display: grid; gap: 6px">
+              <li><strong>1. GitHub Device Login</strong> &mdash; connects the add-on to your GitHub account and saves the token automatically.</li>
+              <li><strong>2. Repository setup</strong> &mdash; load an existing repository or create a new one (defaults to <em>private</em>).</li>
+              <li><strong>3. Advanced options</strong> &mdash; manual repository, branch, token and OAuth app (toggle to reveal).</li>
+              <li><strong>4. Scheduled sync</strong> &mdash; automatic daily/weekly syncs at a chosen time (configured here only).</li>
+              <li><strong>5. Sync scope</strong> &mdash; which files are synced, the pre-commit gate, and the log level.</li>
+              <li><strong>6. Mount points</strong> &mdash; sync whole folders such as <code>/media</code>, <code>/share</code>, <code>/ssl</code>.</li>
+              <li><strong>7. Recommended .gitignore</strong> &mdash; one-click ignore defaults for Home Assistant.</li>
+              <li><strong>8. Dry run</strong> &mdash; preview what would be uploaded before anything reaches GitHub.</li>
+            </ul>
+            <p class="subtle" style="margin: 10px 0 0">
+              Full documentation (installation, option reference, scheduled sync, troubleshooting) is available on GitHub:
+              <a href="https://github.com/TheBlackMini/GithubConfigSync" target="_blank" rel="noopener noreferrer">repository README</a>
+              and the
+              <a href="https://github.com/TheBlackMini/GithubConfigSync/blob/main/addons/github-config-sync/DOCS.md" target="_blank" rel="noopener noreferrer">add-on documentation</a>.
+            </p>
+          </div>
+        </details>
         <div class="row" style="margin-top: 14px">
           <button id="syncBtn" class="secondary">Sync Now</button>
           <button id="cancelSyncBtn" class="secondary">Cancel Current Upload</button>
           <button id="refreshBtn" class="secondary">Refresh Status</button>
         </div>
+        <p style="font-size: 0.8rem; color: var(--muted); margin: 8px 0 0">
+          <strong>Sync Now</strong> runs a scan using the current settings: with <strong>Dry run</strong> enabled (section 8) it
+          only previews what would be uploaded or deleted; untick dry run and click again to push the changes to GitHub. Watch
+          the <strong>Live sync activity</strong> card during an upload, and use the <strong>Danger Zone</strong> below for clean
+          uploads and repository resets.
+        </p>
       </div>
 
       <div class="card">
@@ -659,10 +814,17 @@
         stableRepoVersion: document.getElementById("stableRepoVersion"),
         devRepoVersion: document.getElementById("devRepoVersion"),
         repo: document.getElementById("repo"),
+        repoTargetSummary: document.getElementById("repoTargetSummary"),
         authMethod: document.getElementById("authMethod"),
         authMethodHelp: document.getElementById("authMethodHelp"),
         githubClientId: document.getElementById("githubClientId"),
+        githubToken: document.getElementById("githubToken"),
+        showAdvanced: document.getElementById("showAdvanced"),
+        advancedSection: document.getElementById("advancedSection"),
         branch: document.getElementById("branch"),
+        logLevel: document.getElementById("logLevel"),
+        useHaTzBtn: document.getElementById("useHaTzBtn"),
+        haTimeZoneValue: document.getElementById("haTimeZoneValue"),
         versionRetention: document.getElementById("versionRetention"),
         schedulerTimezone: document.getElementById("schedulerTimezone"),
         syncIncludePatterns: document.getElementById("syncIncludePatterns"),
@@ -736,7 +898,6 @@
         repoBadge: document.getElementById("repoBadge"),
         authSection: document.getElementById("authSection"),
         repoSection: document.getElementById("repoSection"),
-        targetRepoSection: document.getElementById("targetRepoSection"),
         scheduledSyncSection: document.getElementById("scheduledSyncSection"),
         mountPointsSection: document.getElementById("mountPointsSection"),
         gitignoreSection: document.getElementById("gitignoreSection"),
@@ -744,6 +905,7 @@
       };
       let cachedRepos = [];
       let cachedIgnorePatterns = [];
+      let haTimeZone = "";
       let statusPollTimer = null;
       let lastTokenHealthRefresh = 0;
       const TOKEN_HEALTH_REFRESH_MS = 60 * 1000;
@@ -819,6 +981,12 @@
         const hasRepo = Boolean(repo && repo.trim());
         el.repoBadge.textContent = hasRepo ? "Configured" : "No repository";
         el.repoBadge.className = `status ${hasRepo ? "ok" : "err"}`.trim();
+        if (el.repoTargetSummary) {
+          const branch = el.branch && el.branch.value ? el.branch.value : "main";
+          el.repoTargetSummary.textContent = hasRepo
+            ? `Syncing ${repo} at branch ${branch}.`
+            : "No repository selected yet — use the repository section or define one under Advanced options.";
+        }
       }
 
       function collapseResolvedSections() {
@@ -829,7 +997,6 @@
         const repoOk = el.repoBadge.classList.contains("ok");
         el.authSection.open = !tokenOk;
         el.repoSection.open = !repoOk;
-        el.targetRepoSection.open = !repoOk;
 
         const autoSyncConfigured = el.autoSyncEnabled && el.autoSyncEnabled.checked;
         el.scheduledSyncSection.open = !autoSyncConfigured;
@@ -841,13 +1008,13 @@
       function updateAuthMethodHelp() {
         if (el.authMethod.value === "fine_grained_pat") {
           el.authMethodHelp.textContent =
-            "Use a fine-grained PAT scoped to this single repository with only the permissions needed for sync.";
+            "Fine-grained PAT mode. Paste a PAT scoped to this single repository (Contents: Read and write) in the Advanced options section, then save.";
           el.startDeviceBtn.disabled = true;
           el.deviceFlowInfo.textContent = "Device login is not used when fine-grained PAT mode is selected.";
           return;
         }
         el.authMethodHelp.textContent =
-          "Device Flow is recommended for most users. It avoids pasting a token manually and keeps the login flow in GitHub.";
+          "Device Flow is recommended for most users. Clicking Start opens GitHub, and the add-on stores the token for you — no manual token setup.";
         el.startDeviceBtn.disabled = false;
       }
 
@@ -1014,7 +1181,17 @@
           confirmedFor === (data.github_repository || "").trim();
         el.authMethod.value = data.auth_method || "device_flow";
         el.githubClientId.value = data.github_client_id || "";
+        el.githubToken.value = "";
         el.branch.value = data.github_branch || "main";
+        el.syncMode.value = data.sync_mode || "whitelist";
+        el.precommitMode.value = data.precommit_mode || "enabled";
+        el.logLevel.value = data.log_level || "INFO";
+        haTimeZone = data.ha_time_zone || "";
+        if (el.haTimeZoneValue) {
+          el.haTimeZoneValue.textContent = haTimeZone ? haTimeZone : "unknown";
+        }
+        el.schedulerTimezone.placeholder = haTimeZone || "Europe/London";
+        updateRepoBadge(data.github_repository);
         el.versionRetention.value = data.version_retention_count || 7;
         el.schedulerTimezone.value = data.scheduler_timezone || "";
         el.dryRun.checked = Boolean(data.dry_run);
@@ -1294,7 +1471,9 @@
             github_repository: el.repo.value.trim(),
             auth_method: el.authMethod.value,
             github_client_id: el.githubClientId.value.trim() || "",
+            github_token: el.githubToken.value.trim(),
             github_branch: el.branch.value.trim() || "main",
+            log_level: el.logLevel.value,
             version_retention_count: Number(el.versionRetention.value || "7"),
             scheduler_timezone: el.schedulerTimezone.value.trim(),
             sync_include_patterns: el.syncIncludePatterns.value,
@@ -1315,6 +1494,7 @@
           precommit_mode: el.precommitMode.value,
         };
           await fetchJson(apiUrl("/api/options"), { method: "POST", body: JSON.stringify(payload) });
+          el.githubToken.value = "";
           setStatus("Settings saved");
           await Promise.all([loadStatus(), loadDeviceFlowStatus()]);
           refreshTokenHealth().catch(() => {});
@@ -1543,6 +1723,15 @@
         el.repo,
         el.authMethod,
         el.branch,
+        el.logLevel,
+        el.githubClientId,
+        el.githubToken,
+        el.schedulerTimezone,
+        el.syncMode,
+        el.precommitMode,
+        el.syncIncludePatterns,
+        el.syncExcludePatterns,
+        el.cleanPreservePaths,
         el.versionRetention,
         el.dryRun,
         el.includeAddonConfigs,
@@ -1565,6 +1754,22 @@
       ].forEach((item) => {
         const eventName = item && item.type === "checkbox" ? "change" : "input";
         item.addEventListener(eventName, scheduleAutoSave);
+      });
+      el.showAdvanced.addEventListener("change", () => {
+        el.advancedSection.open = el.showAdvanced.checked;
+      });
+      el.authMethod.addEventListener("change", () => {
+        updateAuthMethodHelp();
+        scheduleAutoSave();
+      });
+      el.useHaTzBtn.addEventListener("click", () => {
+        if (haTimeZone) {
+          el.schedulerTimezone.value = haTimeZone;
+          scheduleAutoSave();
+          setStatus(`Using Home Assistant timezone: ${haTimeZone}`);
+        } else {
+          setStatus("Home Assistant timezone not available from Supervisor", false);
+        }
       });
       el.refreshBtn.addEventListener("click", () =>
         {

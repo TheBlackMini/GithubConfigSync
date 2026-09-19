@@ -291,6 +291,7 @@ class GitHubClient:
         return decoded
 
     def _request_any(self, method: str, url: str, payload: dict[str, Any] | None = None, timeout: int = 60) -> Any:
+        _LOGGER.debug("GitHub API %s %s", method, url)
         global _api_last_request_at
         with _api_lock:
             sleep_for = _API_MIN_INTERVAL - (time.monotonic() - _api_last_request_at)
@@ -338,6 +339,7 @@ class GitHubClient:
         raise SyncError(f"GitHub API rate limit exceeded after {max_retries} retries for {method} {url}")
 
     def _oauth_request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        _LOGGER.debug("GitHub OAuth %s %s", method, path)
         headers = {
             "User-Agent": "github-config-sync-addon",
             "Accept": "application/json",
