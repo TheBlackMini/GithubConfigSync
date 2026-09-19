@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -17,6 +18,10 @@ _LOGGER = logging.getLogger(__name__)
 API_BASE = "https://api.github.com"
 OAUTH_BASE = "https://github.com"
 ADDON_REPO_MARKER_PATH = ".github-config-sync-addon.json"
+
+_API_MIN_INTERVAL = 0.25
+_api_lock = threading.Lock()
+_api_last_request_at = 0.0
 
 
 @dataclass(frozen=True)
@@ -286,6 +291,12 @@ class GitHubClient:
         return decoded
 
     def _request_any(self, method: str, url: str, payload: dict[str, Any] | None = None, timeout: int = 60) -> Any:
+        global _api_last_request_at
+        with _api_lock:
+            sleep_for = _API_MIN_INTERVAL - (time.monotonic() - _api_last_request_at)
+            if sleep_for > 0:
+                time.sleep(sleep_for)
+            _api_last_request_at = time.monotonic()
         max_retries = 5
         for attempt in range(max_retries):
             data = None
