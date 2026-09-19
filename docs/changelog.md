@@ -1,10 +1,36 @@
 # Changelog
 
-The full 71-release history lives in
+The full release history lives in
 [CHANGELOG.md](https://github.com/TheBlackMini/GithubConfigSync/blob/main/CHANGELOG.md)
-(and on
-[GitHub Releases](https://github.com/TheBlackMini/GithubConfigSync/releases)).
-The last 5 releases are kept at the top, per the project's changelog rules.
+and is published per version on
+[GitHub Releases](https://github.com/TheBlackMini/GithubConfigSync/releases), so the
+Home Assistant update page shows only the changes between the user's version and the
+update. The last 5 releases are kept at the top, per the project's changelog rules.
+
+## 1.6.2
+
+- **Chore**: Version bumps now promote the top `## Unreleased` changelog section into
+  the released version, keeping the repo-root, add-on, and app changelogs in sync
+  (`scripts/sync_versions.py`)
+- **Chore**: Release notes are now published as GitHub releases (`vX.Y.Z`) so HA shows
+  only the changelog differences between the installed and updated version
+  (`scripts/create_release.py`)
+
+## 1.6.1
+
+- **Feature**: Allow-list ("whitelist") sync is now the default — only files matching
+  the configured include patterns are uploaded; editable `sync_include_patterns`,
+  `sync_exclude_patterns`, and `clean_preserve_paths` options
+- **Fix**: Files that fall off the allow-list (or are excluded/preserved) are no longer
+  deleted from GitHub; clean upload only touches files in the current sync scope
+- **Security**: Saved GitHub token encrypted at rest (Fernet)
+- **Fix**: New `scheduler_timezone` option (IANA name) controls scheduled sync timing
+- **Fix**: Global 0.25s GitHub API throttle and fewer sync workers reduce rate-limit errors
+- **Fix**: Sync log lines redacted with the same secret patterns as diagnostics
+- **Fix**: Device Flow OAuth client ID now configurable via `github_client_id`
+- **Feature**: Pre-commit gate runs before any push (new `precommit_mode` option)
+- **Breaking**: Official support limited to `amd64` and `aarch64`
+- **Chore**: Pre-commit (gitleaks), gitleaks GitHub Action, Dependabot, issue templates
 
 ## 1.6.0
 
@@ -35,19 +61,3 @@ The last 5 releases are kept at the top, per the project's changelog rules.
   lost on reboot)
 - **Fix**: Settings save can never overwrite the real token with the `********`
   mask placeholder
-
-## 1.5.20
-
-- **Fix**: `/api/status` is now fully cached — no live GitHub call on the 2s
-  status poll
-- **Fix**: Added dedicated public `/api/token/health` endpoint for the live
-  GitHub token check, called on a 60s throttle
-- **Fix**: `fetchJson` aborts hung requests after 10s
-
-## 1.5.19
-
-- **Fix**: `_via_ingress_proxy()` checks `X-Hass-Source: core.ingress` +
-  private IP first, with Supervisor IP fallback (works regardless of Docker
-  networking changes)
-- **Fix**: Version fetches from `/api/health` before auth, so it shows instantly
-- **Fix**: IPv6 support in `_is_private_ip()` (ULA, link-local, loopback)

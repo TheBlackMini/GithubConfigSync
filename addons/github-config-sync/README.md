@@ -103,8 +103,8 @@ MIT — see [LICENSE](../../LICENSE) and the [project guide](../../PROJECT.md).
 ## Version Tracker
 
 <!-- VERSION:START -->
-- Integration version: `1.6.1`
-- Add-on version: `1.6.1`
+- Integration version: `1.6.2`
+- Add-on version: `1.6.2`
 - Channel: `stable`
-- Release tag: `v1.6.1`
+- Release tag: `v1.6.2`
 <!-- VERSION:END -->

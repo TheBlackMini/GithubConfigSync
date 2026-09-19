@@ -7,10 +7,10 @@ Single source of truth for project status, architecture, security, and workflow.
 ## Current Status
 
 <!-- VERSION:START -->
-- Integration version: `1.6.1`
-- Add-on version: `1.6.1`
+- Integration version: `1.6.2`
+- Add-on version: `1.6.2`
 - Channel: `stable`
-- Release tag: `v1.6.1`
+- Release tag: `v1.6.2`
 <!-- VERSION:END -->
 - **Last updated:** 2026-08-07
 - **Repo:** `TheBlackMini/GithubConfigSync` (single repo, `main` = stable, `dev` = development)
@@ -84,21 +84,21 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 
 ## Changelog Rules
 
-- The HA update page uses the short repo-root changelog.
-- The in-app UI uses the full app changelog.
-- Update the repo-root changelog on every pushed build/version so the HA update page stays current.
-- Last 5 releases at the top with full details; older releases below a divider.
+- Changelogs are newest-first with one section per release (`## x.y.z`); in-progress notes accumulate under a top `## Unreleased` heading.
+- `scripts/sync_versions.py` promotes the top `## Unreleased` heading into the released version on every bump across the repo-root, add-on, and app changelogs, keeping all three in sync.
+- The HA add-on store renders the add-on's `CHANGELOG.md` (whole file, newest first) whenever the file exists in the add-on folder — no configuration key is needed.
+- The Home Assistant update page / HACS shows release notes from GitHub Releases. `scripts/create_release.py` publishes each version's changelog section as the release body, so users see only the differences between their installed version and the update.
+- Last 5 releases at the top with full details; older releases below.
 
 ---
 
 ## Release Workflow
 
-1. Update code.
+1. Update code; add the changes as notes under `## Unreleased` in the three changelogs.
 2. Bump version in `config.yaml` (single source of truth — `server.py` auto-reads it at startup).
-3. Bump version in `manifest.json` and `hacs.json`.
-4. Update changelog (last 5 releases at top).
-5. Commit and push to dev.
-6. When stable, push to main and create GitHub release.
+3. Run `python3 scripts/sync_versions.py --integration X.Y.Z --channel stable` — bumps `manifest.json` and `hacs.json`, syncs the `VERSION` blocks, and promotes the top `## Unreleased` changelog section into `## X.Y.Z` (a fresh empty `## Unreleased` remains for the next release).
+4. Commit and push to dev.
+5. When stable, push to main, tag `vX.Y.Z`, and run `python3 scripts/create_release.py` to publish a GitHub release whose body is that version's changelog section — HA then shows only the delta for the update.
 
 ---
 
@@ -183,11 +183,11 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 - **Fix**: Reset to Defaults button for ignore patterns was missing event handler (Uncaught TypeError)
 - **Fix**: Add-on rebuild via Supervisor API now works correctly
 
-### Next (Unreleased) — Allow-list Sync & Security
+### v1.6.1 — Allow-list Sync & Security
 
 - **Feature**: Allow-list sync replaces "sync everything" as the default (`sync_mode: whitelist`) — only files matching the configured include patterns are uploaded; editable `sync_include_patterns`, `sync_exclude_patterns`, and `clean_preserve_paths` options
 - **Fix**: Previously synced files that fall off the allow-list (or are excluded/preserved) are no longer deleted from GitHub; clean upload only touches files in the current sync scope
-- **Security**: Saved GitHub token encrypted at rest (Fernet, `enc:v1:`) on disk and Supervisor sync, decrypting transparently in `_merge_options`; no-op without `cryptography` (Dockerfile now installs `py3-cryptography`)
+- **Security**: Saved GitHub token encrypted at rest (Fernet) on disk and Supervisor sync, decrypting transparently in `_merge_options`; no-op without `cryptography` (Dockerfile now installs `py3-cryptography`)
 - **Fix**: New `scheduler_timezone` option (IANA name) controls scheduled sync timing; defaults to server local time
 - **Fix**: Global 0.25s GitHub API throttle (#24) and 2 sync workers reduce secondary rate-limit errors
 - **Fix**: Sync log lines redacted with the same patterns as diagnostics
@@ -195,6 +195,16 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 - **Feature**: Pre-commit gate runs before any push — files about to be uploaded are staged into a throwaway worktree and checked with pre-commit hooks (`prek`, `repo: builtin` offline); the effective config is `{config_root}/.pre-commit-config.yaml` with a bundled offline default fallback; new `precommit_mode` option (`enabled` blocks the upload with a report, `warn` logs only, `disabled` skips); binary shipped in the image; user files are never modified
 - **Platform**: Add-on now targets `amd64` and `aarch64` only — base image `ghcr.io/home-assistant/base:3.24-2026.08.0` is multi-arch and HA deprecated armv7/armhf/i386 support, so those builds are no longer published
 - **Chore**: Removed duplicated `DEFAULT_IGNORE_PATTERNS` from the `custom_components` stub (`sync/hashing.py` is the single source); removed leftover `sync_interval_minutes`; added pre-commit (gitleaks), gitleaks GitHub Action, Dependabot, issue templates
+
+### v1.6.2 — Changelog Workflow & Release Notes
+
+- **Chore**: Version bumps now promote the top `## Unreleased` changelog section into the released version across the repo-root, add-on, and app changelogs (via `scripts/sync_versions.py`)
+- **Chore**: `scripts/create_release.py` publishes per-version GitHub releases from the changelog, so the Home Assistant update page shows only the differences between the user's version and the update
+- **Chore**: Normalized changelog history — 1.6.1 release notes restored and the missing 1.6.0 section in the add-on changelog re-added
+
+### Next (Unreleased)
+
+- (nothing yet)
 
 ### v1.5.0–v1.5.4 — Security Hardening & Token Sync Fix
 
@@ -225,10 +235,12 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 
 ## Release Checklist (Per Tag)
 
-- [ ] Version bumped in `config.yaml`, `manifest.json`, `hacs.json`
-- [ ] Changelog updated (last 5 releases at top)
+- [ ] Notes added under `## Unreleased` in the three changelogs
+- [ ] `python3 scripts/sync_versions.py --integration X.Y.Z --channel stable` run (promotes Unreleased → X.Y.Z, bumps manifest/hacs/docs)
+- [ ] `--check` reports "version sync check passed"
 - [ ] Validation/CI green
 - [ ] Docs updated
 - [ ] Committed and pushed to dev
-- [ ] GitHub Release created
+- [ ] Merged to main + tag `vX.Y.Z`
+- [ ] `python3 scripts/create_release.py` run to publish the changelog section as the GitHub release body
 - [ ] This file updated
