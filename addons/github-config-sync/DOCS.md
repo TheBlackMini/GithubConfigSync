@@ -12,19 +12,23 @@ A Home Assistant add-on that syncs your config folder to GitHub with an ingress 
 
 ## First run
 
-Everything happens in the web UI — no manual file editing:
+Everything happens in the web UI — no manual file editing. On first run the UI opens as a **setup wizard**:
 
-1. **GitHub Device Login (section 1)** — click **Start Device Login**. GitHub opens in a new tab showing a code; confirm it on GitHub and the add-on stores the token automatically. To use a fine-grained PAT instead, switch the authentication method to **Fine-grained PAT** and paste the token under **Advanced options**.
-2. **Repository setup (section 2)** — click **Load Repositories** to pick an adopted/owned repository, or choose **Create new repository** (private by default, name defaults to `ha-github-config-sync`).
-3. **Advanced options (section 3)** — normally read-only. Use it to change the target branch, set a token manually, or point Device Flow at your own OAuth app.
-4. **Dry run (section 8)** stays enabled until the preview looks right. Click **Sync Now** to preview, then disable dry run and click **Sync Now** again for a live upload.
+1. **Connect GitHub (step 1)** — pick an authentication method and click **Start Device Login**. GitHub opens in a new tab showing a code; confirm it on GitHub and the add-on stores the token automatically. For a **GitHub App**, the wizard walks you through creating your own app (Metadata: Read-only, Contents: Read and write, device flow enabled) and installing it on the repository to sync — paste its **Client ID** before starting. For a fine-grained PAT, switch the authentication method and paste the token.
+2. **Repository (step 2)** — pick an adopted/owned repository with **Load Repositories**, or choose **Create new repository** (private by default, name defaults to `ha-github-config-sync`). The owner/repo and branch fields are also editable here.
+3. **What to sync (step 3)** — set the sync mode, patterns, mount points and .gitignore defaults.
+4. **Schedule & safety (step 4)** — scheduled sync + dry run.
+5. **Review (step 5)** — a summary of your choices; **Finish** saves and switches to the settings view.
+
+Every section in the settings view has its own **Save** button (only that section is written), and **Re-run wizard** restarts the guided flow at any time.
 
 ## Authentication
 
 | Method | When to use | Setup |
 | --- | --- | --- |
+| **GitHub App** (recommended) | Least privilege, one or a few repositories | Create your own GitHub App (Settings → Developer settings → GitHub Apps) with **Metadata: Read-only** and **Contents: Read and write**, tick **Opt in to the device flow**, install it on only the repositories to sync, and paste its **Client ID** into the connect step. GitHub shows the app name you chose. No client secret is needed for the device flow. |
 | **GitHub Device Flow** (default) | Most users | Click **Start Device Login** and confirm the code on GitHub. |
-| **Fine-grained PAT** | Restricted environments, scripts | Create a PAT scoped to the target repository with **Contents: Read and write**; paste it under **Advanced options → GitHub token**. |
+| **Fine-grained PAT** | Restricted environments, scripts | Create a PAT scoped to the target repository with **Contents: Read and write**; paste it in the connect step. |
 
 The token is saved encrypted at rest and never shown again in the UI (masked as `********`).
 
@@ -71,7 +75,7 @@ Rules are read from `.pre-commit-config.yaml` in your Home Assistant config fold
 
 ## Scheduled sync
 
-Scheduled sync runs in the background inside the add-on and lives **only in the web UI (section 4)** — it is not part of `config.yaml`, so the Home Assistant **Configuration** tab does not show it.
+Scheduled sync runs in the background inside the add-on and lives **only in the web UI (Scheduled sync section)** — it is not part of `config.yaml`, so the Home Assistant **Configuration** tab does not show it.
 
 1. Enable **scheduled sync**.
 2. Pick the **days** (Mon–Sun) and a **time**.
@@ -79,7 +83,7 @@ Scheduled sync runs in the background inside the add-on and lives **only in the 
 
 The scheduler uses `scheduler_timezone` (an IANA name such as `Europe/Berlin`) if set, otherwise the server's local timezone. Use **Use Home Assistant timezone** to copy the HA timezone into the field.
 
-> **Why is the schedule not in the Configuration tab?** The schedule is runtime behaviour configured from the add-on web UI, and the values are stored/synced to the add-on options automatically, so they survive restarts. It is intentionally not part of `config.yaml`: exposing it there would create a second, competing editor for the same settings in the Home Assistant **Configuration** tab. Configure it once in the web UI (section 4) and it just runs.
+> **Why is the schedule not in the Configuration tab?** The schedule is runtime behaviour configured from the add-on web UI, and the values are stored/synced to the add-on options automatically, so they survive restarts. It is intentionally not part of `config.yaml`: exposing it there would create a second, competing editor for the same settings in the Home Assistant **Configuration** tab. Configure it once in the web UI (Scheduled sync section) and it just runs.
 
 ## Logging
 
@@ -91,10 +95,10 @@ The full set of options, with the web-UI section where each is edited:
 
 | Option | Web UI location | Default | Example |
 | --- | --- | --- | --- |
-| `github_repository` | 2 / 3 (advanced) | _empty_ | `TheBlackMini/home-assistant-config` |
-| `github_branch` | 3 (advanced) | `main` | `main` |
-| `github_token` | 1 / 3 (advanced) | _empty_ | set by Device Flow |
-| `github_client_id` | 3 (advanced) | default OAuth app | `Ov23liAbCdEfGhIjKlM` |
+| `github_repository` | Repository / connect | _empty_ | `TheBlackMini/home-assistant-config` |
+| `github_branch` | Repository | `main` | `main` |
+| `github_token` | Connect | _empty_ | set by Device Flow |
+| `github_client_id` | Connect | default OAuth app | `Ov23liAbCdEfGhIjKlM` (your GitHub App's Client ID for `github_app`) |
 | `scheduler_timezone` | 4 | _empty_ (server local) | `Europe/Berlin` |
 | `sync_include_patterns` | 5 | `*.yaml`, `*.json`, `themes`, … | `packages\n*.yaml` |
 | `sync_exclude_patterns` | 5 | _empty_ | `home-assistant.log\n**/*.tmp` |
@@ -119,8 +123,8 @@ Values marked "Web UI location" are editable directly in the web UI. The same ke
 
 The web UI is the only place to start a sync. With the add-on running, open it with **Open Web UI** on the add-on's Info page:
 
-1. Complete **GitHub Device Login** (section 1) and pick or create a repository (section 2).
-2. Leave **Dry run** (section 8) enabled and click **Sync Now** — the **Dry-run plan** panel shows exactly what would be uploaded and deleted, without touching GitHub.
+1. Complete the **Connect GitHub** step and pick or create a repository (repository step).
+2. Leave **Dry run** enabled (Schedule & safety) and click **Sync Now** — the **Dry-run plan** panel shows exactly what would be uploaded and deleted, without touching GitHub.
 3. When the preview looks right, untick **Dry run** and click **Sync Now** again to push the changes to GitHub. Progress shows in the **Live sync activity** card.
 4. The same **Sync Now** button also starts a manual sync when you want one outside the configured schedule.
 
@@ -144,12 +148,12 @@ When reporting an issue: open the web UI, expand **Diagnostics**, and click **Do
 
 | Task | What to do |
 | --- | --- |
-| First live sync | Complete sections 1–2, run a dry run, disable dry run, **Sync Now**. |
-| Change branch | **Advanced options → Target branch**, save. |
-| Switch to a PAT | **Authentication method → Fine-grained PAT**, paste the token under Advanced options, save. |
+| First live sync | Complete the wizard (Connect, Repository, What to sync), run a dry run, disable dry run, **Sync Now**. |
+| Change branch | **Settings → Repository setup → Target branch**, save. |
+| Switch to a PAT or GitHub App | **Settings → Connect GitHub → Authentication method**, save. |
 | Sync once at 02:00 every weekend | **Scheduled sync**: enable, tick Sat+Sun, time `02:00`. |
-| Add `/media` to the repo | Section 6: tick **Include /media** (uploads to `media/`). |
-| Stop accidental pushes | Keep **Dry run** enabled in section 8. |
+| Add `/media` to the repo | **Mount points**: tick **Include /media** (uploads to `media/`). |
+| Stop accidental pushes | Keep **Dry run** enabled in **Dry run**. |
 
 ## License
 

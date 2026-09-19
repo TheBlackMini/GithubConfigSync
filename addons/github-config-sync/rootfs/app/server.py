@@ -642,8 +642,8 @@ def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
             except (TypeError, ValueError):
                 return False, "auto_sync_days must contain integers 1-7 (Mon-Sun)"
 
-    if str(payload.get("auth_method", "device_flow")) not in ("device_flow", "fine_grained_pat"):
-        return False, "auth_method must be device_flow or fine_grained_pat"
+    if str(payload.get("auth_method", "device_flow")) not in ("device_flow", "fine_grained_pat", "github_app"):
+        return False, "auth_method must be device_flow, fine_grained_pat, or github_app"
     sync_mode = str(payload.get("sync_mode", "whitelist")).strip()
     if sync_mode not in ("whitelist", "blacklist"):
         return False, "sync_mode must be whitelist or blacklist"
@@ -1594,13 +1594,26 @@ def start_device_auth():
         return jsonify({"ok": False, "error": "Invalid JSON body"}), 400
 
     options = _merge_options()
-    client_id = str(
-        (payload or {}).get("client_id")
-        or options.get("github_client_id")
-        or DEFAULT_OAUTH_CLIENT_ID
+    auth_method = str(
+        (payload or {}).get("auth_method") or options.get("auth_method") or "device_flow"
     ).strip()
-    if not client_id:
-        return jsonify({"ok": False, "error": "github_client_id is required"}), 400
+    client_id = str((payload or {}).get("client_id") or options.get("github_client_id") or "").strip()
+    if auth_method == "github_app":
+        if not client_id or client_id == DEFAULT_OAUTH_CLIENT_ID:
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": (
+                        "Client ID required for GitHub App auth: create your own "
+                        "GitHub App and paste its Client ID (see the setup instructions)."
+                    ),
+                }
+            ), 400
+        scope = None  # GitHub Apps authorise via app permissions, not OAuth scopes
+    else:
+        if not client_id:
+            return jsonify({"ok": False, "error": "github_client_id is required"}), 400
+        scope = "repo"
 
     client = GitHubClient(
         repository=str(options.get("github_repository", "")).strip(),
@@ -1608,7 +1621,7 @@ def start_device_auth():
         token="",
     )
     try:
-        device_flow = client.start_device_flow(client_id)
+        device_flow = client.start_device_flow(client_id, scope=scope)
     except SyncError as err:
         _append_log(f"Device flow start failed: {err}")
         return jsonify({"ok": False, "error": str(err)}), 502
@@ -1616,6 +1629,7 @@ def start_device_auth():
     expires_in = int(device_flow.get("expires_in", 900))
     flow_state = {
         "client_id": client_id,
+        "auth_method": auth_method,
         "device_code": str(device_flow.get("device_code", "")).strip(),
         "user_code": str(device_flow.get("user_code", "")).strip(),
         "verification_uri": str(
@@ -1670,6 +1684,7 @@ def complete_device_auth():
     merged = _merge_options()
     merged["github_token"] = token
     merged["github_client_id"] = str(flow.get("client_id", "")).strip() or DEFAULT_OAUTH_CLIENT_ID
+    merged["auth_method"] = str(flow.get("auth_method") or merged.get("auth_method") or "device_flow")
     _persist_options(merged)
     _sync_options_to_supervisor(merged)
     _clear_device_flow()

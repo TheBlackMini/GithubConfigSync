@@ -182,6 +182,63 @@ class ServerApiTests(unittest.TestCase):
         self.assertTrue(body["ok"])
         self.assertEqual(body["options"]["github_token"], "********")
 
+    def test_start_device_flow_github_app_requires_client_id(self) -> None:
+        self._write_options({"github_client_id": "", "github_branch": "main"})
+        with patch("sync.github_client.GitHubClient.start_device_flow") as start_flow:
+            response = self.client.post("/api/auth/device/start", json={"auth_method": "github_app"})
+
+        self.assertEqual(response.status_code, 400)
+        body = response.get_json()
+        self.assertFalse(body["ok"])
+        self.assertIn("Client ID", body["error"])
+        start_flow.assert_not_called()
+
+    def test_start_device_flow_github_app_rejects_default_client_id(self) -> None:
+        self._write_options({"github_client_id": server.DEFAULT_OAUTH_CLIENT_ID, "github_branch": "main"})
+        with patch("sync.github_client.GitHubClient.start_device_flow") as start_flow:
+            response = self.client.post("/api/auth/device/start", json={"auth_method": "github_app"})
+
+        self.assertEqual(response.status_code, 400)
+        body = response.get_json()
+        self.assertFalse(body["ok"])
+        self.assertIn("Client ID", body["error"])
+        start_flow.assert_not_called()
+
+    def test_start_device_flow_github_app_omits_scope(self) -> None:
+        self._write_options({"github_client_id": "custom-client", "github_branch": "main"})
+        with patch("sync.github_client.GitHubClient.start_device_flow") as start_flow:
+            start_flow.return_value = {
+                "device_code": "device-code",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "interval": 5,
+                "expires_in": 900,
+            }
+            response = self.client.post("/api/auth/device/start", json={"auth_method": "github_app"})
+
+        self.assertEqual(response.status_code, 200)
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["user_code"], "ABCD-EFGH")
+        _, kwargs = start_flow.call_args
+        self.assertEqual(kwargs.get("scope"), None)
+
+    def test_start_device_flow_device_flow_uses_repo_scope(self) -> None:
+        self._write_options({"github_client_id": "client-id", "github_branch": "main"})
+        with patch("sync.github_client.GitHubClient.start_device_flow") as start_flow:
+            start_flow.return_value = {
+                "device_code": "device-code",
+                "user_code": "ABCD-EFGH",
+                "verification_uri": "https://github.com/login/device",
+                "interval": 5,
+                "expires_in": 900,
+            }
+            response = self.client.post("/api/auth/device/start", json={"auth_method": "device_flow"})
+
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = start_flow.call_args
+        self.assertEqual(kwargs.get("scope"), "repo")
+
     def test_list_repositories_requires_auth_token(self) -> None:
         self._write_options(
             {

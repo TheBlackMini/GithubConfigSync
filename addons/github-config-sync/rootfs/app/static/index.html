@@ -19,6 +19,34 @@
         --border: var(--divider-color, #dbe3ee);
       }
 
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f1218;
+        --card: #161b24;
+        --card-2: #1f2632;
+        --muted: #9aa7b8;
+        --text: #e6ebf2;
+        --accent: #4c9aff;
+        --accent-2: #3b82f6;
+        --ok: #34d399;
+        --err: #f87171;
+        --border: #2b3544;
+      }
+
+      html[data-theme="light"] {
+        color-scheme: light;
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --card-2: #f2f4f8;
+        --muted: #6b7280;
+        --text: #111827;
+        --accent: #3b82f6;
+        --accent-2: #2563eb;
+        --ok: #10b981;
+        --err: #ef4444;
+        --border: #dbe3ee;
+      }
+
       body {
         margin: 0;
         font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -262,18 +290,104 @@
         min-height: 140px;
       }
 
-      .version-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        margin-top: 10px;
+      .config-section {
+        margin-top: 12px;
       }
 
-      .version-item {
+      .view-switch {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+
+      .view-switch .spacer {
+        flex: 1;
+      }
+
+      .wizard-steps {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .step-dot {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--muted);
         background: var(--card-2);
+        cursor: pointer;
+      }
+
+      .step-dot.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--text-primary-color, #ffffff);
+      }
+
+      .step-dot.done {
+        color: var(--ok);
+        border-color: var(--ok);
+      }
+
+      .wizard-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .section-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .manage-nav {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
-        padding: 10px 12px;
+        padding: 10px;
+      }
+
+      .manage-nav a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 4px 8px;
+        border-radius: 8px;
+      }
+
+      .manage-nav a:hover {
+        background: var(--card-2);
+        color: var(--text);
+      }
+
+      .theme-btn {
+        background: var(--card-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        font-size: 0.8rem;
+        padding: 6px 10px;
+      }
+
+      .github-app-guide ol {
+        margin: 6px 0 0 0;
+        padding-left: 20px;
+        font-size: 0.85rem;
+        color: var(--muted);
+        display: grid;
+        gap: 4px;
+      }
+
+      .hidden {
+        display: none !important;
       }
 
       pre {
@@ -333,18 +447,9 @@
             <p class="subtle">GitHub-backed Home Assistant sync, device login, repository selection, and live upload control.</p>
           </div>
           <div class="row" style="justify-content: flex-end">
+            <button id="themeBtn" class="theme-btn" type="button">Theme: Auto</button>
             <span id="versionBadge" class="pill status">Version...</span>
             <span id="status" class="pill status">Loading...</span>
-          </div>
-        </div>
-        <div class="version-grid">
-          <div class="version-item">
-            <span class="progress-label">Stable</span>
-            <span id="stableRepoVersion" class="progress-value">Loading...</span>
-          </div>
-          <div class="version-item">
-            <span class="progress-label">Dev</span>
-            <span id="devRepoVersion" class="progress-value">Loading...</span>
           </div>
         </div>
         <div class="danger" style="margin-top: 12px">
@@ -357,10 +462,34 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="configCard">
         <h2 class="section-title">Installation and Usage</h2>
-        <details id="authSection" open>
-          <summary style="cursor: pointer; color: var(--muted)">1. GitHub Device Login <span id="tokenBadge" class="pill status">Token missing</span></summary>
+
+        <div class="view-switch">
+          <div class="wizard-steps" id="wizardSteps">
+            <span class="step-dot" data-step="1">Connect GitHub</span>
+            <span class="step-dot" data-step="2">Repository</span>
+            <span class="step-dot" data-step="3">What to sync</span>
+            <span class="step-dot" data-step="4">Schedule &amp; safety</span>
+            <span class="step-dot" data-step="5">Review</span>
+          </div>
+          <div class="spacer"></div>
+          <button id="rerunWizardBtn" class="secondary" type="button">Re-run wizard</button>
+        </div>
+
+        <div class="manage-nav hidden" id="manageNav">
+          <a href="#authSection">1. Connect GitHub</a>
+          <a href="#repoSection">2. Repository setup</a>
+          <a href="#syncModeSection">3. Sync scope</a>
+          <a href="#mountPointsSection">4. Mount points</a>
+          <a href="#gitignoreSection">5. Recommended .gitignore</a>
+          <a href="#scheduledSyncSection">6. Scheduled sync</a>
+          <a href="#dryRunSection">7. Dry run</a>
+          <a href="#docsSection">8. Documentation</a>
+        </div>
+
+        <details id="authSection" class="config-section" data-step="1" open>
+          <summary style="cursor: pointer; color: var(--muted)">1. Connect GitHub <span id="tokenBadge" class="pill status">Token missing</span></summary>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <p class="subtle" style="margin-bottom: 10px">
               Choose how GitHub should authenticate this add-on.
@@ -368,18 +497,50 @@
             <div class="field" style="margin-bottom: 10px">
               <label for="authMethod">Authentication method</label>
               <select id="authMethod">
-                <option value="device_flow">GitHub Device Flow (Recommended)</option>
+                <option value="github_app">GitHub App (Recommended — least privilege)</option>
+                <option value="device_flow">GitHub OAuth Device Flow</option>
                 <option value="fine_grained_pat">Fine-grained PAT (Security Focused)</option>
               </select>
             </div>
             <p id="authMethodHelp" class="subtle" style="margin-bottom: 10px"></p>
+            <div id="githubAppGuide" class="hidden" style="margin-bottom: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+              <p class="subtle" style="font-weight: 600; margin-bottom: 4px">Create your own GitHub App (shows your name on GitHub's screens, needs nothing from this add-on's maintainer):</p>
+              <ol>
+                <li>Open <a href="https://github.com/settings/apps/new" target="_blank" rel="noopener noreferrer">github.com/settings/apps/new</a> (or <code>Settings &rarr; Developer settings &rarr; GitHub Apps &rarr; New GitHub App</code>).</li>
+                <li>Give it a name you recognize, e.g. <code>Github Config Sync</code>. The Homepage URL and Webhook fields are not needed (webhook can be disabled).</li>
+                <li>Under <strong>Repository permissions</strong>, set <strong>Metadata: Read-only</strong> and <strong>Contents: Read and write</strong>.</li>
+                <li>Under <strong>Where can this GitHub App be installed?</strong>, choose <strong>Only on this account</strong>.</li>
+                <li>Tick <strong>Opt in to the device flow</strong>, then create the app.</li>
+                <li>Install it on your account, choosing <strong>Only select repositories</strong> and picking the repository you will sync.</li>
+                <li>Copy the <strong>Client ID</strong> from the app settings page into the field below. No client secret is needed for device flow.</li>
+              </ol>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="githubClientId">GitHub App / OAuth Client ID (Device Flow)</label>
+                <input id="githubClientId" placeholder="Ov23li..." />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Required when using a GitHub App. Overrides the default OAuth app otherwise. Example: <code>Ov23liAbCdEfGhIjKlM</code>.
+                </p>
+              </div>
+              <div class="field">
+                <label for="githubToken">GitHub token</label>
+                <input id="githubToken" type="password" placeholder="XXXX" autocomplete="off" />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                  Set automatically by Device Login. Paste a fine-grained PAT here to overwrite it. Leave empty to keep the saved token.
+                </p>
+              </div>
+            </div>
             <div class="row" id="deviceLoginRow">
-              <button id="startDeviceBtn" class="secondary">Start Device Login</button>
+              <button id="startDeviceBtn" class="secondary" type="button">Start Device Login</button>
             </div>
             <p id="deviceFlowInfo" class="subtle" style="margin-top: 10px"></p>
+            <div class="section-actions">
+              <button id="saveAuthBtn" class="secondary" type="button" data-keys="auth_method,github_client_id,github_token">Save Connect settings</button>
+            </div>
           </div>
         </details>
-        <details id="repoSection" style="margin-top: 12px" open>
+        <details id="repoSection" class="config-section" data-step="2" style="margin-top: 12px" open>
           <summary style="cursor: pointer; color: var(--muted)">2. Repository setup <span id="repoBadge" class="pill status">No repository</span></summary>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="field">
@@ -430,28 +591,12 @@
               </div>
             </div>
             <p class="subtle" id="repoTargetSummary" style="margin: 12px 0 0"></p>
-          </div>
-        </details>
-        <details id="advancedSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">3. Advanced options</summary>
-          <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
-            <div class="row" style="margin-bottom: 4px">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
-                <input id="showAdvanced" type="checkbox" />
-                <strong>Show advanced GitHub settings (manual repository, branch, token, OAuth client)</strong>
-              </label>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--muted); margin: 0 0 10px">
-              The options below are set automatically by Device Login and the repository picker. You normally only
-              need them to switch to a fine-grained PAT, point at a different branch, or use your own OAuth app.
-              They are stored in the add-on configuration and stay encrypted at rest.
-            </p>
-            <div class="grid">
+            <div class="grid" style="margin-top: 12px">
               <div class="field">
                 <label for="repo">Target repository (owner/repo)</label>
                 <input id="repo" placeholder="TheBlackMini/home-assistant-config" />
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
-                  GitHub repository to sync to, formatted <code>owner/repo</code>. Set by the repository picker above.
+                  GitHub repository to sync to, formatted <code>owner/repo</code>. Set by the picker above.
                 </p>
               </div>
               <div class="field">
@@ -461,24 +606,13 @@
                   Branch in the repository files are pushed to. Defaults to <code>main</code>.
                 </p>
               </div>
-              <div class="field">
-                <label for="githubToken">GitHub token</label>
-                <input id="githubToken" type="password" placeholder="XXXX" autocomplete="off" />
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
-                  Set automatically by Device Login. Paste a fine-grained PAT here to overwrite it. Leave empty to keep the saved token.
-                </p>
-              </div>
-              <div class="field">
-                <label for="githubClientId">GitHub OAuth App Client ID (Device Flow)</label>
-                <input id="githubClientId" placeholder="Ov23li..." />
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
-                  Optional. Overrides the default GitHub OAuth app used for Device Flow login. Example: <code>Ov23liAbCdEfGhIjKlM</code>.
-                </p>
-              </div>
+            </div>
+            <div class="section-actions">
+              <button id="saveRepoBtn" class="secondary" type="button" data-keys="repo_mode,existing_repo_confirmed_for,github_repository,github_branch">Save Repository settings</button>
             </div>
           </div>
         </details>
-        <details id="scheduledSyncSection" style="margin-top: 12px">
+        <details id="scheduledSyncSection" class="config-section" data-step="4" style="margin-top: 12px">
           <summary style="cursor: pointer; color: var(--muted)">4. Scheduled sync <span id="schedulerStatus"></span></summary>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="row" style="margin-bottom: 10px">
@@ -545,10 +679,13 @@
                 </p>
               </div>
             </div>
+            <div class="section-actions">
+              <button id="saveScheduleBtn" class="secondary" type="button" data-keys="auto_sync_enabled,auto_sync_days,auto_sync_time,auto_sync_create_release,version_retention_count,scheduler_timezone">Save Schedule settings</button>
+            </div>
           </div>
         </details>
-        <details id="syncModeSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">5. Sync scope</summary>
+        <details id="syncModeSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">3. Sync scope</summary>
           <div style="margin-top: 10px;">
             <label style="display: flex; align-items: center; gap: 8px;">
               <span>Sync mode:</span>
@@ -611,10 +748,13 @@
                 Files matching these are never deleted by a clean upload.
               </p>
             </div>
+            <div class="section-actions">
+              <button id="saveScopeBtn" class="secondary" type="button" data-keys="sync_mode,precommit_mode,log_level,sync_include_patterns,sync_exclude_patterns,clean_preserve_paths">Save Sync scope settings</button>
+            </div>
           </div>
         </details>
-        <details id="mountPointsSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">6. Mount points to sync</summary>
+        <details id="mountPointsSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">4. Mount points to sync</summary>
           <p class="subtle" style="margin-top: 10px">
             Synced mounts are imported wholesale into their own folder of the repository, outside the config allow-list.
           </p>
@@ -662,9 +802,12 @@
               </span>
             </label>
           </div>
+          <div class="section-actions">
+            <button id="saveMountsBtn" class="secondary" type="button" data-keys="include_addon_configs,include_media,include_share,include_ssl,include_backups,include_www">Save Mount settings</button>
+          </div>
         </details>
-        <details id="gitignoreSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">7. Recommended .gitignore entries</summary>
+        <details id="gitignoreSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">5. Recommended .gitignore entries</summary>
           <p class="subtle" style="margin-bottom: 10px">
             These are safe defaults for Home Assistant. They are read from your local .gitignore and can be added with one click.
           </p>
@@ -683,8 +826,8 @@
             <button id="refreshIgnoreBtn" class="secondary">Refresh Ignore Suggestions</button>
           </div>
         </details>
-        <details id="dryRunSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">8. Dry run mode (no push)</summary>
+        <details id="dryRunSection" class="config-section" data-step="4" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">7. Dry run mode (no push)</summary>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="row">
               <input id="dryRun" type="checkbox" />
@@ -693,24 +836,35 @@
             <p style="font-size: 0.8rem; color: var(--muted); margin: 6px 0 0">
               When enabled, the sync plan is computed and displayed but nothing is pushed to GitHub.
             </p>
+            <div class="section-actions">
+              <button id="saveDryRunBtn" class="secondary" type="button" data-keys="dry_run">Save Dry run setting</button>
+            </div>
           </div>
         </details>
-        <details id="docsSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">9. Documentation</summary>
+        <details id="reviewSection" class="config-section hidden" data-step="5">
+          <summary style="cursor: pointer; color: var(--muted)">Review &amp; finish</summary>
+          <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+            <p class="subtle" style="margin-bottom: 10px" id="reviewSummary">Checking your setup...</p>
+            <div class="row">
+              <button id="finishSetupBtn" class="secondary" type="button">Finish setup</button>
+            </div>
+          </div>
+        </details>
+        <details id="docsSection" class="config-section" data-step="docs" style="margin-top: 12px">
+          <summary style="cursor: pointer; color: var(--muted)">8. Documentation</summary>
           <div style="margin-top: 10px">
             <p class="subtle" style="margin-bottom: 10px">
               Everything is configured from this page &mdash; nothing needs to be typed by hand. The sections above work
               together, left to right:
             </p>
             <ul style="margin: 0; padding-left: 18px; font-size: 0.9rem; color: var(--muted); display: grid; gap: 6px">
-              <li><strong>1. GitHub Device Login</strong> &mdash; connects the add-on to your GitHub account and saves the token automatically.</li>
+              <li><strong>1. Connect GitHub</strong> &mdash; connects the add-on to your GitHub account (your own GitHub App, the default Device Flow, or a fine-grained PAT) and saves the token.</li>
               <li><strong>2. Repository setup</strong> &mdash; load an existing repository or create a new one (defaults to <em>private</em>).</li>
-              <li><strong>3. Advanced options</strong> &mdash; manual repository, branch, token and OAuth app (toggle to reveal).</li>
-              <li><strong>4. Scheduled sync</strong> &mdash; automatic daily/weekly syncs at a chosen time (configured here only).</li>
-              <li><strong>5. Sync scope</strong> &mdash; which files are synced, the pre-commit gate, and the log level.</li>
-              <li><strong>6. Mount points</strong> &mdash; sync whole folders such as <code>/media</code>, <code>/share</code>, <code>/ssl</code>.</li>
-              <li><strong>7. Recommended .gitignore</strong> &mdash; one-click ignore defaults for Home Assistant.</li>
-              <li><strong>8. Dry run</strong> &mdash; preview what would be uploaded before anything reaches GitHub.</li>
+              <li><strong>3. Sync scope</strong> &mdash; which files are synced, the pre-commit gate, and the log level.</li>
+              <li><strong>4. Mount points</strong> &mdash; sync whole folders such as <code>/media</code>, <code>/share</code>, <code>/ssl</code>.</li>
+              <li><strong>5. Recommended .gitignore</strong> &mdash; one-click ignore defaults for Home Assistant.</li>
+              <li><strong>6. Scheduled sync</strong> &mdash; automatic daily/weekly syncs at a chosen time.</li>
+              <li><strong>7. Dry run</strong> &mdash; preview what would be uploaded before anything reaches GitHub.</li>
             </ul>
             <p class="subtle" style="margin: 10px 0 0">
               Full documentation (installation, option reference, scheduled sync, troubleshooting) is available on GitHub:
@@ -726,11 +880,15 @@
           <button id="refreshBtn" class="secondary">Refresh Status</button>
         </div>
         <p style="font-size: 0.8rem; color: var(--muted); margin: 8px 0 0">
-          <strong>Sync Now</strong> runs a scan using the current settings: with <strong>Dry run</strong> enabled (section 8) it
+          <strong>Sync Now</strong> runs a scan using the current settings: with <strong>Dry run</strong> enabled it
           only previews what would be uploaded or deleted; untick dry run and click again to push the changes to GitHub. Watch
           the <strong>Live sync activity</strong> card during an upload, and use the <strong>Danger Zone</strong> below for clean
           uploads and repository resets.
         </p>
+        <div class="wizard-footer" id="wizardFooter">
+          <button id="wizardBackBtn" class="secondary" type="button">Back</button>
+          <button id="wizardNextBtn" class="secondary" type="button">Next</button>
+        </div>
       </div>
 
       <div class="card">
@@ -811,16 +969,14 @@
       const el = {
         status: document.getElementById("status"),
         versionBadge: document.getElementById("versionBadge"),
-        stableRepoVersion: document.getElementById("stableRepoVersion"),
-        devRepoVersion: document.getElementById("devRepoVersion"),
+        themeBtn: document.getElementById("themeBtn"),
         repo: document.getElementById("repo"),
         repoTargetSummary: document.getElementById("repoTargetSummary"),
         authMethod: document.getElementById("authMethod"),
         authMethodHelp: document.getElementById("authMethodHelp"),
         githubClientId: document.getElementById("githubClientId"),
         githubToken: document.getElementById("githubToken"),
-        showAdvanced: document.getElementById("showAdvanced"),
-        advancedSection: document.getElementById("advancedSection"),
+        githubAppGuide: document.getElementById("githubAppGuide"),
         branch: document.getElementById("branch"),
         logLevel: document.getElementById("logLevel"),
         useHaTzBtn: document.getElementById("useHaTzBtn"),
@@ -902,6 +1058,18 @@
         mountPointsSection: document.getElementById("mountPointsSection"),
         gitignoreSection: document.getElementById("gitignoreSection"),
         dryRunSection: document.getElementById("dryRunSection"),
+        docsSection: document.getElementById("docsSection"),
+        configCard: document.getElementById("configCard"),
+        wizardSteps: document.getElementById("wizardSteps"),
+        manageNav: document.getElementById("manageNav"),
+        rerunWizardBtn: document.getElementById("rerunWizardBtn"),
+        wizardNextBtn: document.getElementById("wizardNextBtn"),
+        wizardBackBtn: document.getElementById("wizardBackBtn"),
+        wizardFooter: document.getElementById("wizardFooter"),
+        reviewSection: document.getElementById("reviewSection"),
+        reviewSummary: document.getElementById("reviewSummary"),
+        finishSetupBtn: document.getElementById("finishSetupBtn"),
+        configSections: Array.from(document.querySelectorAll("#configCard details.config-section")),
       };
       let cachedRepos = [];
       let cachedIgnorePatterns = [];
@@ -910,13 +1078,114 @@
       let lastTokenHealthRefresh = 0;
       const TOKEN_HEALTH_REFRESH_MS = 60 * 1000;
       let confirmAction = null;
-      let autoSaveTimer = null;
-      let autoSaveInFlight = false;
-      let autoSaveQueued = false;
+      let currentStep = 1;
+      let wizardActive = true;
+      const THEME_KEY = "gcs-theme";
+      const THEME_CYCLE = ["auto", "light", "dark"];
       const ingressBase = `${window.location.pathname.replace(/\/+$/, "")}/`;
 
       function apiUrl(path) {
         return `${ingressBase}${path.replace(/^\/+/, "")}`;
+      }
+
+      function applyTheme() {
+        const theme = localStorage.getItem(THEME_KEY) || "auto";
+        const prefersDark =
+          window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const effective = theme === "auto" ? (prefersDark ? "dark" : "light") : theme;
+        document.documentElement.dataset.theme = effective;
+        el.themeBtn.textContent = `Theme: ${theme[0].toUpperCase()}${theme.slice(1)}`;
+      }
+
+      el.themeBtn.addEventListener("click", () => {
+        const theme = localStorage.getItem(THEME_KEY) || "auto";
+        const next = THEME_CYCLE[(THEME_CYCLE.indexOf(theme) + 1) % THEME_CYCLE.length];
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme();
+      });
+      if (window.matchMedia) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+      }
+      applyTheme();
+
+      function showStepSections(step) {
+        el.configSections.forEach((section) => {
+          section.classList.toggle("hidden", String(section.dataset.step) !== String(step));
+        });
+        el.reviewSection.classList.toggle("hidden", step !== 5);
+      }
+
+      function forceOpenCurrentSections() {
+        el.configSections.forEach((section) => {
+          if (String(section.dataset.step) === String(currentStep)) {
+            section.open = true;
+          }
+        });
+        if (currentStep === 5) {
+          el.reviewSection.open = true;
+        }
+      }
+
+      function refreshReviewSummary() {
+        const repo = el.repo.value.trim();
+        const branch = el.branch.value.trim() || "main";
+        const mode =
+          el.syncMode.value === "whitelist"
+            ? "whitelist (only include patterns are synced)"
+            : "blacklist (everything except excludes)";
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const sched = el.autoSyncEnabled.checked
+          ? `enabled on ${getSelectedDays().map((day) => days[day - 1]).join(", ") || "no days"} at ${el.autoSyncTime.value || "03:00"}`
+          : "disabled";
+        const auth =
+          el.authMethod.value === "github_app"
+            ? `GitHub App${el.githubClientId.value.trim() ? ` (Client ID ${el.githubClientId.value.trim()})` : " (no Client ID yet)"}`
+            : el.authMethod.value === "fine_grained_pat"
+              ? "Fine-grained PAT"
+              : "GitHub OAuth Device Flow";
+        const dry = el.dryRun.checked ? "Dry run is ON — nothing will be pushed yet." : "Dry run is OFF — files will be pushed.";
+        el.reviewSummary.innerHTML =
+          `<strong>${auth}</strong> &rarr; repository <strong>${repo || "(none selected)"}</strong> ` +
+          `on branch <strong>${branch}</strong>.<br />` +
+          `Sync scope: ${mode}. Scheduled sync: ${sched}.<br />` +
+          dry;
+      }
+
+      function setWizardStep(step) {
+        currentStep = Math.max(1, Math.min(5, step));
+        showStepSections(currentStep);
+        forceOpenCurrentSections();
+        el.wizardSteps.querySelectorAll(".step-dot").forEach((dot) => {
+          const dotStep = Number(dot.dataset.step);
+          dot.classList.toggle("active", dotStep === currentStep);
+          dot.classList.toggle("done", dotStep < currentStep);
+        });
+        el.wizardBackBtn.disabled = currentStep === 1;
+        el.wizardNextBtn.textContent = currentStep === 5 ? "Finish" : "Next";
+        if (currentStep === 5) {
+          refreshReviewSummary();
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function enterWizard() {
+        wizardActive = true;
+        el.manageNav.classList.add("hidden");
+        el.wizardSteps.classList.remove("hidden");
+        el.wizardFooter.classList.remove("hidden");
+        setWizardStep(currentStep);
+      }
+
+      function enterSettings() {
+        wizardActive = false;
+        el.manageNav.classList.remove("hidden");
+        el.wizardSteps.classList.add("hidden");
+        el.wizardFooter.classList.add("hidden");
+        el.reviewSection.classList.add("hidden");
+        el.configSections.forEach((section) => {
+          section.classList.remove("hidden");
+        });
+        collapseResolvedSections();
       }
 
       function setStatus(message, ok = true) {
@@ -990,6 +1259,9 @@
       }
 
       function collapseResolvedSections() {
+        if (wizardActive) {
+          return;
+        }
         // A token is present when the badge is "ok" (valid) or "warn"
         // (rate_limited / transient check error). Only a missing or expired
         // token should keep the auth section open.
@@ -1008,14 +1280,23 @@
       function updateAuthMethodHelp() {
         if (el.authMethod.value === "fine_grained_pat") {
           el.authMethodHelp.textContent =
-            "Fine-grained PAT mode. Paste a PAT scoped to this single repository (Contents: Read and write) in the Advanced options section, then save.";
+            "Fine-grained PAT mode. Paste a PAT scoped to this single repository (Contents: Read and write) in the token field, then save.";
           el.startDeviceBtn.disabled = true;
           el.deviceFlowInfo.textContent = "Device login is not used when fine-grained PAT mode is selected.";
+          el.githubAppGuide.classList.add("hidden");
+          return;
+        }
+        if (el.authMethod.value === "github_app") {
+          el.authMethodHelp.textContent =
+            "Use your own GitHub App, scoped to only the repositories you select. This is the most privacy-friendly option: it needs Metadata (read-only) and Contents (read and write) on just your chosen repository, and GitHub shows the app name you choose instead of the add-on's default.";
+          el.startDeviceBtn.disabled = false;
+          el.githubAppGuide.classList.remove("hidden");
           return;
         }
         el.authMethodHelp.textContent =
-          "Device Flow is recommended for most users. Clicking Start opens GitHub, and the add-on stores the token for you — no manual token setup.";
+          "Device Flow via the default GitHub OAuth app is the simplest path. Clicking Start opens GitHub and the add-on stores the token for you — no manual token setup. For a least-privilege setup tied to one repository, choose GitHub App instead.";
         el.startDeviceBtn.disabled = false;
+        el.githubAppGuide.classList.add("hidden");
       }
 
       function getRepoMode() {
@@ -1050,7 +1331,7 @@
 
       function updateSchedulerStatus(enabled) {
         el.schedulerStatus.textContent = enabled ? "Enabled" : "Disabled";
-        el.schedulerStatus.style.color = enabled ? "var(--good)" : "var(--err)";
+        el.schedulerStatus.style.color = enabled ? "var(--ok)" : "var(--err)";
         el.schedulerStatus.style.fontWeight = "bold";
         el.schedulerStatus.style.fontSize = "0.85rem";
       }
@@ -1313,8 +1594,6 @@
           "\n\n" +
           (data.log_tail || "");
         el.versionBadge.textContent = `Version: ${data.version || "unknown"}`;
-        el.stableRepoVersion.textContent = (data.repo_versions && data.repo_versions.stable) || "unknown";
-        el.devRepoVersion.textContent = (data.repo_versions && data.repo_versions.dev) || "unknown";
         const stateStatus = (data.state && data.state.status) || "idle";
         if (stateStatus === "running") {
           setStatus("Running");
@@ -1358,7 +1637,7 @@
         // Also re-check immediately when visibility changes back to visible
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") {
-            Promise.all([loadStatus(), loadOptions()]).catch(() => {});
+            loadStatus().catch(() => {});
             refreshTokenHealth().catch(() => {});
           }
         });
@@ -1387,8 +1666,8 @@
           items.forEach((item) => {
             const label = document.createElement("label");
             label.className = "row";
-            label.style.justifyContent = "space-between";
-            label.style.gap = "12px";
+            label.style.gap = "8px";
+            label.style.flexWrap = "nowrap";
             label.innerHTML = `<span>${item.pattern}</span>`;
             const input = document.createElement("input");
             input.type = "checkbox";
@@ -1422,7 +1701,6 @@
           item.checked = checked;
         });
         el.selectAllIgnore.indeterminate = false;
-        scheduleAutoSave();
       }
 
       async function addIgnoreDefaults() {
@@ -1460,65 +1738,95 @@
         setStatus("Diagnostics downloaded");
       }
 
-      async function saveOptions() {
-        autoSaveInFlight = true;
-        try {
-          const repoMode = getRepoMode();
-          const payload = {
-            repo_mode: repoMode,
-            existing_repo_confirmed_for:
-              repoMode === "existing" && el.existingRepoRiskAck.checked ? el.repo.value.trim() : "",
-            github_repository: el.repo.value.trim(),
-            auth_method: el.authMethod.value,
-            github_client_id: el.githubClientId.value.trim() || "",
-            github_token: el.githubToken.value.trim(),
-            github_branch: el.branch.value.trim() || "main",
-            log_level: el.logLevel.value,
-            version_retention_count: Number(el.versionRetention.value || "7"),
-            scheduler_timezone: el.schedulerTimezone.value.trim(),
-            sync_include_patterns: el.syncIncludePatterns.value,
-            sync_exclude_patterns: el.syncExcludePatterns.value,
-            clean_preserve_paths: el.cleanPreservePaths.value,
-            dry_run: el.dryRun.checked,
-            auto_sync_enabled: el.autoSyncEnabled.checked,
-            auto_sync_days: getSelectedDays(),
-            auto_sync_time: el.autoSyncTime.value || "03:00",
-            auto_sync_create_release: el.autoSyncCreateRelease.checked,
-            include_addon_configs: el.includeAddonConfigs.checked,
-            include_media: el.includeMedia.checked,
-            include_share: el.includeShare.checked,
-            include_ssl: el.includeSsl.checked,
-            include_backups: el.includeBackups.checked,
-            include_www: el.includeWww.checked,
-            sync_mode: el.syncMode.value,
-          precommit_mode: el.precommitMode.value,
-        };
-          await fetchJson(apiUrl("/api/options"), { method: "POST", body: JSON.stringify(payload) });
-          el.githubToken.value = "";
-          setStatus("Settings saved");
-          await Promise.all([loadStatus(), loadDeviceFlowStatus()]);
-          refreshTokenHealth().catch(() => {});
-        } finally {
-          autoSaveInFlight = false;
-          if (autoSaveQueued) {
-            autoSaveQueued = false;
-            scheduleAutoSave();
-          }
-        }
+      function getPayloadEntries() {
+        const repoMode = getRepoMode();
+        return [
+          ["repo_mode", repoMode],
+          [
+            "existing_repo_confirmed_for",
+            repoMode === "existing" && el.existingRepoRiskAck.checked ? el.repo.value.trim() : "",
+          ],
+          ["github_repository", el.repo.value.trim()],
+          ["auth_method", el.authMethod.value],
+          ["github_client_id", el.githubClientId.value.trim() || ""],
+          ["github_token", el.githubToken.value.trim()],
+          ["github_branch", el.branch.value.trim() || "main"],
+          ["log_level", el.logLevel.value],
+          ["version_retention_count", Number(el.versionRetention.value || "7")],
+          ["scheduler_timezone", el.schedulerTimezone.value.trim()],
+          ["sync_include_patterns", el.syncIncludePatterns.value],
+          ["sync_exclude_patterns", el.syncExcludePatterns.value],
+          ["clean_preserve_paths", el.cleanPreservePaths.value],
+          ["dry_run", el.dryRun.checked],
+          ["auto_sync_enabled", el.autoSyncEnabled.checked],
+          ["auto_sync_days", getSelectedDays()],
+          ["auto_sync_time", el.autoSyncTime.value || "03:00"],
+          ["auto_sync_create_release", el.autoSyncCreateRelease.checked],
+          ["include_addon_configs", el.includeAddonConfigs.checked],
+          ["include_media", el.includeMedia.checked],
+          ["include_share", el.includeShare.checked],
+          ["include_ssl", el.includeSsl.checked],
+          ["include_backups", el.includeBackups.checked],
+          ["include_www", el.includeWww.checked],
+          ["sync_mode", el.syncMode.value],
+          ["precommit_mode", el.precommitMode.value],
+        ];
       }
 
-      function scheduleAutoSave() {
-        if (autoSaveTimer) {
-          window.clearTimeout(autoSaveTimer);
-        }
-        autoSaveTimer = window.setTimeout(() => {
-          autoSaveTimer = null;
-          if (autoSaveInFlight) {
-            autoSaveQueued = true;
-            return;
+      function collectPayload(keys) {
+        const payload = {};
+        (keys || []).forEach((key) => {
+          const match = getPayloadEntries().find((entry) => entry[0] === key);
+          if (match) {
+            payload[key] = match[1];
           }
-          saveOptions().catch(showUiError);
-        }, 900);
+        });
+        return payload;
+      }
+
+      async function saveSection(keys) {
+        const payload = keys.length ? collectPayload(keys) : Object.fromEntries(getPayloadEntries());
+        await fetchJson(apiUrl("/api/options"), { method: "POST", body: JSON.stringify(payload) });
+        el.githubToken.value = "";
+        setStatus("Settings saved");
+        await Promise.all([loadStatus(), loadDeviceFlowStatus()]);
+        refreshTokenHealth().catch(() => {});
+      }
+
+      async function saveOptions() {
+        await saveSection([]);
+      }
+
+      function sectionKeysForStep(step) {
+        const keys = {
+          1: ["auth_method", "github_client_id", "github_token"],
+          2: ["repo_mode", "existing_repo_confirmed_for", "github_repository", "github_branch"],
+          3: [
+            "sync_mode",
+            "precommit_mode",
+            "log_level",
+            "sync_include_patterns",
+            "sync_exclude_patterns",
+            "clean_preserve_paths",
+            "include_addon_configs",
+            "include_media",
+            "include_share",
+            "include_ssl",
+            "include_backups",
+            "include_www",
+          ],
+          4: [
+            "auto_sync_enabled",
+            "auto_sync_days",
+            "auto_sync_time",
+            "auto_sync_create_release",
+            "version_retention_count",
+            "scheduler_timezone",
+            "dry_run",
+          ],
+          5: [],
+        };
+        return keys[step] || [];
       }
 
       async function startDeviceLogin() {
@@ -1528,7 +1836,7 @@
           await saveOptions();
           const data = await fetchJson(apiUrl("/api/auth/device/start"), {
             method: "POST",
-            body: JSON.stringify({}),
+            body: JSON.stringify({ auth_method: el.authMethod.value }),
           });
           el.deviceFlowInfo.innerHTML = `Authorize with code <strong>${data.user_code}</strong> at <a href="${data.verification_uri_complete}" target="_blank" rel="noopener noreferrer">GitHub device login</a>`;
           window.open(data.verification_uri_complete, "_blank", "noopener,noreferrer");
@@ -1685,7 +1993,7 @@
           if (getRepoMode() !== "existing") {
             el.existingRepoRiskAck.checked = false;
           }
-          scheduleAutoSave();
+          saveSection(sectionKeysForStep(2)).catch(showUiError);
         })
       );
       el.loadManagedReposBtn.addEventListener("click", () =>
@@ -1703,7 +2011,7 @@
         if (el.repoPicker.value) {
           el.repo.value = el.repoPicker.value;
           updateRepoBadge(el.repo.value);
-          scheduleAutoSave();
+          saveSection(sectionKeysForStep(2)).catch(showUiError);
         }
       });
       el.existingRepoRiskAck.addEventListener("change", () => {
@@ -1719,57 +2027,57 @@
           el.newRepoDescription.value = humanizeRepoName(el.newRepoName.value);
         }
       });
-      [
-        el.repo,
-        el.authMethod,
-        el.branch,
-        el.logLevel,
-        el.githubClientId,
-        el.githubToken,
-        el.schedulerTimezone,
-        el.syncMode,
-        el.precommitMode,
-        el.syncIncludePatterns,
-        el.syncExcludePatterns,
-        el.cleanPreservePaths,
-        el.versionRetention,
-        el.dryRun,
-        el.includeAddonConfigs,
-        el.includeMedia,
-        el.includeShare,
-        el.includeSsl,
-        el.includeBackups,
-        el.includeWww,
-        el.existingRepoRiskAck,
-        el.autoSyncEnabled,
-        el.autoSyncTime,
-        el.autoSyncCreateRelease,
-        el.dayMon,
-        el.dayTue,
-        el.dayWed,
-        el.dayThu,
-        el.dayFri,
-        el.daySat,
-        el.daySun,
-      ].forEach((item) => {
-        const eventName = item && item.type === "checkbox" ? "change" : "input";
-        item.addEventListener(eventName, scheduleAutoSave);
-      });
-      el.showAdvanced.addEventListener("change", () => {
-        el.advancedSection.open = el.showAdvanced.checked;
-      });
       el.authMethod.addEventListener("change", () => {
         updateAuthMethodHelp();
-        scheduleAutoSave();
+        saveSection(sectionKeysForStep(1)).catch(showUiError);
       });
       el.useHaTzBtn.addEventListener("click", () => {
         if (haTimeZone) {
           el.schedulerTimezone.value = haTimeZone;
-          scheduleAutoSave();
+          saveSection(sectionKeysForStep(4)).catch(showUiError);
           setStatus(`Using Home Assistant timezone: ${haTimeZone}`);
         } else {
           setStatus("Home Assistant timezone not available from Supervisor", false);
         }
+      });
+      document.querySelectorAll("[data-keys]").forEach((button) => {
+        button.addEventListener("click", () => {
+          setButtonBusy(button, true, "Saving...");
+          const keys = button.dataset.keys.split(",").map((key) => key.trim());
+          saveSection(keys)
+            .catch(showUiError)
+            .finally(() => setButtonBusy(button, false));
+        });
+      });
+      el.wizardNextBtn.addEventListener("click", () => {
+        if (currentStep === 5) {
+          saveOptions()
+            .then(() => {
+              setStatus("Setup complete");
+              enterSettings();
+            })
+            .catch(showUiError);
+          return;
+        }
+        saveSection(sectionKeysForStep(currentStep))
+          .then(() => setWizardStep(currentStep + 1))
+          .catch(showUiError);
+      });
+      el.wizardBackBtn.addEventListener("click", () => setWizardStep(currentStep - 1));
+      el.rerunWizardBtn.addEventListener("click", () => {
+        currentStep = 1;
+        enterWizard();
+      });
+      el.wizardSteps.querySelectorAll(".step-dot").forEach((dot) =>
+        dot.addEventListener("click", () => setWizardStep(Number(dot.dataset.step)))
+      );
+      el.finishSetupBtn.addEventListener("click", () => {
+        saveOptions()
+          .then(() => {
+            setStatus("Setup complete");
+            enterSettings();
+          })
+          .catch(showUiError);
       });
       el.refreshBtn.addEventListener("click", () =>
         {
@@ -1831,17 +2139,6 @@
       applyRepoMode();
       updateTokenBadge({ state: "checking" });
 
-      // Early fetch version from /api/health (public, no auth, no GitHub call)
-      fetchJson(apiUrl("/api/health"))
-        .then((data) => {
-          el.versionBadge.textContent = `Version: ${data.version || "unknown"}`;
-          if (data.repo_versions) {
-            el.stableRepoVersion.textContent = data.repo_versions.stable || "unknown";
-            el.devRepoVersion.textContent = data.repo_versions.dev || "unknown";
-          }
-        })
-        .catch(() => {});
-
       Promise.allSettled([
         loadOptions().catch(() => undefined), // don't let options auth failure block UI render
         loadStatus(),
@@ -1857,6 +2154,14 @@
         }
         collapseResolvedSections();
         setStatus("Ready");
+        const hasRepo = Boolean((el.repo && el.repo.value || "").trim());
+        const tokenOk = el.tokenBadge.classList.contains("ok") || el.tokenBadge.classList.contains("warn");
+        if (hasRepo && tokenOk) {
+          enterSettings();
+        } else {
+          currentStep = 1;
+          enterWizard();
+        }
       });
       startStatusPolling();
       refreshTokenHealth().catch(() => {});
