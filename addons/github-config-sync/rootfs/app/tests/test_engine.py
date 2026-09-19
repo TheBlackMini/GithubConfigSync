@@ -31,8 +31,8 @@ class SyncEngineTests(unittest.TestCase):
                 branch="main",
                 token="token",
                 config_root=str(root),
-                addon_config_root=str(addon_root),
-                dry_run=True,
+                addon_config_root="/addon_configs",
+                dry_run=False,
                 include_addon_configs=True,
             )
 
@@ -87,6 +87,7 @@ class SyncEngineTests(unittest.TestCase):
                 addon_config_root="/addon_configs",
                 dry_run=False,
                 include_addon_configs=True,
+                precommit_mode="disabled",
             )
             plan = SyncPlan(
                 added=["added.yaml", "missing.yaml"],
@@ -127,6 +128,7 @@ class SyncEngineTests(unittest.TestCase):
                 addon_config_root="/addon_configs",
                 dry_run=False,
                 include_addon_configs=True,
+                precommit_mode="disabled",
             )
             plan = SyncPlan(added=["a.yaml"], changed=[], removed=[], total_files=1)
 
@@ -184,6 +186,7 @@ class SyncEngineTests(unittest.TestCase):
                 addon_config_root="/addon_configs",
                 dry_run=False,
                 include_addon_configs=True,
+                precommit_mode="disabled",
             )
             plan = SyncPlan(added=["one.yaml", "two.yaml"], changed=[], removed=[], total_files=2)
             fake_client = MagicMock()
@@ -216,6 +219,7 @@ class SyncEngineTests(unittest.TestCase):
                 addon_config_root="/addon_configs",
                 dry_run=False,
                 include_addon_configs=True,
+                precommit_mode="disabled",
             )
             plan = SyncPlan(added=["one.yaml"], changed=[], removed=[], total_files=1)
             fake_client = MagicMock()
