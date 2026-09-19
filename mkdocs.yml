@@ -1,8 +1,8 @@
 site_name: Github Config Sync
 site_description: Home Assistant add-on for syncing your config folder to GitHub
-site_url: https://MJP-76.github.io/GithubConfigSync/
-repo_url: https://github.com/MJP-76/GithubConfigSync
-repo_name: MJP-76/GithubConfigSync
+site_url: https://TheBlackMini.github.io/GithubConfigSync/
+repo_url: https://github.com/TheBlackMini/GithubConfigSync
+repo_name: TheBlackMini/GithubConfigSync
 edit_uri: edit/main/docs/
 
 theme:

@@ -1,9 +1,9 @@
 # Github Config Sync App
-[![CI](https://github.com/MJP-76/GithubConfigSync/actions/workflows/validate.yml/badge.svg)](https://github.com/MJP-76/GithubConfigSync/actions/workflows/validate.yml)
+[![CI](https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/validate.yml/badge.svg)](https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/validate.yml)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Add--on-03a9f4.svg)](https://www.home-assistant.io/)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB.svg)](https://www.python.org/)
 [![HASSfest](https://img.shields.io/badge/HASSfest-validated-success.svg)](https://developers.home-assistant.io/docs/add-ons/)
-[![Release](https://img.shields.io/github/v/tag/MJP-76/GithubConfigSync?label=release)](https://github.com/MJP-76/GithubConfigSync/releases)
+[![Release](https://img.shields.io/github/v/tag/TheBlackMini/GithubConfigSync?label=release)](https://github.com/TheBlackMini/GithubConfigSync/releases)
 
 Containerized Home Assistant app with an ingress web UI for GitHub config sync operations. Current release details are tracked below in the version tracker. This is a sync tool, not a backup tool.
 
@@ -128,7 +128,7 @@ Rules are read from `.pre-commit-config.yaml` in your Home Assistant config fold
 
 ## First run
 
-1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories** and add this repository URL: `https://github.com/MJP-76/GithubConfigSync`.
+1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories** and add this repository URL: `https://github.com/TheBlackMini/GithubConfigSync`.
 2. Install **Github Config Sync**.
 3. Open the app web UI from the Installation and Usage card.
 4. Complete GitHub Device Flow login (section 1).

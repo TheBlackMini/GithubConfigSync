@@ -13,7 +13,7 @@ Single source of truth for project status, architecture, security, and workflow.
 - Release tag: `v1.6.0`
 <!-- VERSION:END -->
 - **Last updated:** 2026-08-07
-- **Repo:** `MJP-76/GithubConfigSync` (single repo, `main` = stable, `dev` = development)
+- **Repo:** `TheBlackMini/GithubConfigSync` (single repo, `main` = stable, `dev` = development)
 - **Add-on path:** `addons/github-config-sync/`
 - **Integration path:** `custom_components/github_config_sync/`
 - **App source:** `addons/github-config-sync/rootfs/app/`
