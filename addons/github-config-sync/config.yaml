@@ -33,11 +33,30 @@ options:
   github_repository: ""
   github_branch: "main"
   github_token: ""
+  github_client_id: ""
+  scheduler_timezone: ""
+  sync_include_patterns: ""
+  sync_exclude_patterns: ""
+  clean_preserve_paths: ""
+  version_retention_count: 7
+  dry_run: true
+  include_addon_configs: false
+  include_media: false
+  include_share: false
+  include_ssl: false
+  include_backups: false
+  include_www: false
+  sync_mode: "whitelist"
+  precommit_mode: "enabled"
 schema:
   github_repository: str?
   github_branch: str
   github_token: password?
-  sync_interval_minutes: int(5,1440)?
+  github_client_id: str?
+  scheduler_timezone: str?
+  sync_include_patterns: str?
+  sync_exclude_patterns: str?
+  clean_preserve_paths: str?
   version_retention_count: int(1,100)?
   dry_run: bool?
   include_addon_configs: bool?
@@ -47,3 +66,4 @@ schema:
   include_backups: bool?
   include_www: bool?
   sync_mode: list("whitelist","blacklist")?
+  precommit_mode: list("enabled","warn","disabled")?

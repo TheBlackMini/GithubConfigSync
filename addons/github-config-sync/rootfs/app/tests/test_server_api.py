@@ -76,7 +76,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "",
                 "github_branch": "main",
                 "github_token": "token",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -95,7 +94,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "token",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -116,7 +114,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "token",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
                 "include_addon_configs": True,
             }
@@ -134,7 +131,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "token",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -300,7 +296,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -395,7 +390,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -417,7 +411,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -449,7 +442,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -466,7 +458,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -501,7 +492,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -524,7 +514,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -566,8 +555,12 @@ class ServerApiTests(unittest.TestCase):
         self.assertEqual(captured["url"], "http://supervisor/addons/self/options")
         self.assertEqual(captured["method"], "POST")
         self.assertEqual(
-            captured["data"],
-            {"options": {"github_repository": "owner/repo", "github_token": "secret-token"}},
+            server._decrypt_secret(captured["data"]["options"]["github_token"]),
+            "secret-token",
+        )
+        self.assertEqual(
+            captured["data"]["options"]["github_repository"],
+            "owner/repo",
         )
         self.assertEqual(captured["authorization"], "Bearer supervisor-test-token")
 
@@ -577,7 +570,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "real-token",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -587,7 +579,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "********",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             },
         )
@@ -604,7 +595,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -659,7 +649,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
                 "existing_repo_confirmed_for": "owner/repo",
             }
@@ -696,7 +685,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
                 "existing_repo_confirmed_for": "owner/repo",
             }
@@ -733,7 +721,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
                 "existing_repo_confirmed_for": "owner/repo",
             }
@@ -770,7 +757,6 @@ class ServerApiTests(unittest.TestCase):
                 "github_repository": "owner/repo",
                 "github_branch": "main",
                 "github_token": "gho_test",
-                "sync_interval_minutes": 60,
                 "dry_run": True,
             }
         )
@@ -908,8 +894,13 @@ class ServerApiTests(unittest.TestCase):
         body = response.get_json()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(body["ok"])
-        self.assertIn("gho_persisted", server.SUPERVISOR_OPTIONS_PATH.read_text(encoding="utf-8"))
-        self.assertIn("gho_persisted", server.WEBUI_OPTIONS_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(server._merge_options()["github_token"], "gho_persisted")
+        if server._CRYPTO_AVAILABLE:
+            self.assertNotIn("gho_persisted", server.SUPERVISOR_OPTIONS_PATH.read_text(encoding="utf-8"))
+            self.assertNotIn("gho_persisted", server.WEBUI_OPTIONS_PATH.read_text(encoding="utf-8"))
+        else:
+            self.assertIn("gho_persisted", server.SUPERVISOR_OPTIONS_PATH.read_text(encoding="utf-8"))
+            self.assertIn("gho_persisted", server.WEBUI_OPTIONS_PATH.read_text(encoding="utf-8"))
 
     def test_all_include_flags_default_to_false_when_keys_missing(self) -> None:
         self._write_options(
@@ -1054,6 +1045,103 @@ class AuthBehaviorTests(unittest.TestCase):
         response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["ok"])
+
+    def test_pattern_list_normalizes_strings_and_sequences(self) -> None:
+        self.assertEqual(server._pattern_list("*.yaml, themes\npackages"), ("*.yaml", "themes", "packages"))
+        self.assertEqual(server._pattern_list(["a.yaml", "b"]), ("a.yaml", "b"))
+        self.assertEqual(server._pattern_list(""), ())
+        self.assertEqual(server._pattern_list(None), ())
+
+    def test_encrypt_decrypt_round_trip_when_cryptography_available(self) -> None:
+        if not server._CRYPTO_AVAILABLE:
+            self.skipTest("cryptography is not available")
+        from cryptography.fernet import Fernet
+
+        fake_key = Fernet.generate_key()
+        with patch("server._encryption_key", return_value=fake_key):
+            encrypted = server._encrypt_secret("gho_secret_token")
+        self.assertTrue(encrypted.startswith("enc:v1:"))
+        self.assertNotEqual(encrypted, "gho_secret_token")
+        with patch("server._encryption_key", return_value=fake_key):
+            self.assertEqual(server._decrypt_secret(encrypted), "gho_secret_token")
+
+    def test_encrypt_secret_noop_without_cryptography(self) -> None:
+        if server._CRYPTO_AVAILABLE:
+            self.skipTest("cryptography is available")
+        self.assertEqual(server._encrypt_secret("gho_secret_token"), "gho_secret_token")
+        self.assertEqual(server._decrypt_secret("gho_secret_token"), "gho_secret_token")
+
+    def test_set_options_persists_new_scope_fields(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "scheduler_timezone": "Europe/Berlin",
+                "sync_mode": "whitelist",
+                "sync_include_patterns": "*.yaml\nthemes",
+                "sync_exclude_patterns": "*.log",
+                "clean_preserve_paths": "docs",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "scheduler_timezone": "Europe/Berlin",
+                "sync_mode": "whitelist",
+                "sync_include_patterns": "*.yaml\nthemes",
+                "sync_exclude_patterns": "*.log",
+                "clean_preserve_paths": "docs",
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        merged = server._merge_options()
+        self.assertEqual(merged["scheduler_timezone"], "Europe/Berlin")
+        self.assertEqual(merged["sync_include_patterns"], "*.yaml\nthemes")
+        self.assertNotIn("sync_interval_minutes", merged)
+
+    def test_set_options_accepts_and_persists_precommit_mode(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "precommit_mode": "enabled",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "precommit_mode": "warn",
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(server._merge_options()["precommit_mode"], "warn")
+
+    def test_set_options_rejects_invalid_precommit_mode(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "precommit_mode": "enabled",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={"precommit_mode": "sometimes"},
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("precommit_mode", response.get_json()["error"])
 
 
 if __name__ == "__main__":

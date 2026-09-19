@@ -342,6 +342,13 @@
                 <option value="fine_grained_pat">Fine-grained PAT (Security Focused)</option>
               </select>
             </div>
+            <div class="field" style="margin-bottom: 10px">
+              <label for="githubClientId">GitHub OAuth App Client ID (Device Flow)</label>
+              <input id="githubClientId" placeholder="Ov23li..." />
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                Optional. Overrides the default GitHub OAuth app used for Device Flow login.
+              </p>
+            </div>
             <p id="authMethodHelp" class="subtle" style="margin-bottom: 10px"></p>
             <div class="row" id="deviceLoginRow">
               <button id="startDeviceBtn" class="secondary">Start Device Login</button>
@@ -461,27 +468,64 @@
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">Number of GitHub releases to retain</p>
               </div>
               <div class="field">
-                <label for="syncInterval">Scheduled sync interval (minutes)</label>
-                <input id="syncInterval" type="number" min="5" max="10080" />
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">How often to run scheduled sync (default 1440 = daily)</p>
+                <label for="schedulerTimezone">Scheduler timezone (IANA)</label>
+                <input id="schedulerTimezone" placeholder="Europe/Berlin" />
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">Optional; defaults to the server's local timezone</p>
               </div>
             </div>
           </div>
         </details>
         <details id="syncModeSection" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">5. Sync mode</summary>
+          <summary style="cursor: pointer; color: var(--muted)">5. Sync scope</summary>
           <div style="margin-top: 10px;">
             <label style="display: flex; align-items: center; gap: 8px;">
               <span>Sync mode:</span>
               <select id="syncMode" style="flex: 1; max-width: 200px;">
-                <option value="whitelist">Whitelist (default) — only sync explicitly enabled paths</option>
-                <option value="blacklist">Blacklist — sync everything except ignored patterns</option>
+                <option value="whitelist">Whitelist (default) — only sync explicitly allowed paths</option>
+                <option value="blacklist">Blacklist — sync everything except excluded patterns</option>
               </select>
             </label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 0">
-              Whitelist: only explicitly enabled folders (config, www, etc.) are synced.
-              Blacklist: everything is synced except ignored patterns (legacy behavior).
+              Whitelist: only files matching the include patterns below are synced (empty list = sync nothing).
+              Blacklist: everything is synced except ignored or excluded patterns (legacy behavior).
             </p>
+            <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+              <span>Pre-commit gate:</span>
+              <select id="precommitMode" style="flex: 1; max-width: 200px;">
+                <option value="enabled">Enabled (block push if hooks fail)</option>
+                <option value="warn">Warn only (log violations, still push)</option>
+                <option value="disabled">Disabled</option>
+              </select>
+            </label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 0">
+              Runs pre-commit hooks on the files about to be pushed, before anything reaches GitHub.
+              Uses <code>.pre-commit-config.yaml</code> from your Home Assistant config folder if present,
+              otherwise the bundled offline default. Requires the <code>prek</code> executable in the add-on image,
+              which is included on amd64/aarch64.
+            </p>
+            <div class="field" style="margin-top: 10px">
+              <label for="syncIncludePatterns">Include patterns (each on its own line, one per line)</label>
+              <textarea id="syncIncludePatterns" rows="6" spellcheck="false"
+                placeholder="*.yaml&#10;*.json&#10;themes&#10;packages"></textarea>
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                fnmatch-style. A directory name also matches everything beneath it. Used in whitelist mode.
+              </p>
+            </div>
+            <div class="field" style="margin-top: 10px">
+              <label for="syncExcludePatterns">Exclude patterns</label>
+              <textarea id="syncExcludePatterns" rows="4" spellcheck="false"
+                placeholder="home-assistant.log&#10;**/*.tmp"></textarea>
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                Excluded paths are never synced, in either mode.
+              </p>
+            </div>
+            <div class="field" style="margin-top: 10px">
+              <label for="cleanPreservePaths">Clean-upload preserve paths</label>
+              <textarea id="cleanPreservePaths" rows="3" spellcheck="false" placeholder="docs&#10;README.md"></textarea>
+              <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
+                Files matching these are never deleted by a clean upload.
+              </p>
+            </div>
           </div>
         </details>
         <details id="mountPointsSection" style="margin-top: 12px">
@@ -617,9 +661,14 @@
         repo: document.getElementById("repo"),
         authMethod: document.getElementById("authMethod"),
         authMethodHelp: document.getElementById("authMethodHelp"),
+        githubClientId: document.getElementById("githubClientId"),
         branch: document.getElementById("branch"),
         versionRetention: document.getElementById("versionRetention"),
-        syncInterval: document.getElementById("syncInterval"),
+        schedulerTimezone: document.getElementById("schedulerTimezone"),
+        syncIncludePatterns: document.getElementById("syncIncludePatterns"),
+        syncExcludePatterns: document.getElementById("syncExcludePatterns"),
+        cleanPreservePaths: document.getElementById("cleanPreservePaths"),
+       precommitMode: document.getElementById("precommitMode"),
         autoSyncEnabled: document.getElementById("autoSyncEnabled"),
         autoSyncOptions: document.getElementById("autoSyncOptions"),
         autoSyncTime: document.getElementById("autoSyncTime"),
@@ -964,9 +1013,10 @@
           Boolean(confirmedFor) &&
           confirmedFor === (data.github_repository || "").trim();
         el.authMethod.value = data.auth_method || "device_flow";
+        el.githubClientId.value = data.github_client_id || "";
         el.branch.value = data.github_branch || "main";
         el.versionRetention.value = data.version_retention_count || 7;
-        el.syncInterval.value = data.sync_interval_minutes || 1440;
+        el.schedulerTimezone.value = data.scheduler_timezone || "";
         el.dryRun.checked = Boolean(data.dry_run);
         el.autoSyncEnabled.checked = Boolean(data.auto_sync_enabled);
         updateSchedulerStatus(Boolean(data.auto_sync_enabled));
@@ -989,6 +1039,16 @@
         el.includeBackups.checked = Boolean(data.include_backups);
         el.includeWww.checked = Boolean(data.include_www);
         el.syncMode.value = data.sync_mode || "whitelist";
+        el.precommitMode.value = data.precommit_mode || "enabled";
+        el.syncIncludePatterns.value = Array.isArray(data.sync_include_patterns)
+          ? data.sync_include_patterns.join("\n")
+          : (data.sync_include_patterns || "");
+        el.syncExcludePatterns.value = Array.isArray(data.sync_exclude_patterns)
+          ? data.sync_exclude_patterns.join("\n")
+          : (data.sync_exclude_patterns || "");
+        el.cleanPreservePaths.value = Array.isArray(data.clean_preserve_paths)
+          ? data.clean_preserve_paths.join("\n")
+          : (data.clean_preserve_paths || "");
         applyRepoMode();
         updateAuthMethodHelp();
       }
@@ -1233,9 +1293,13 @@
               repoMode === "existing" && el.existingRepoRiskAck.checked ? el.repo.value.trim() : "",
             github_repository: el.repo.value.trim(),
             auth_method: el.authMethod.value,
+            github_client_id: el.githubClientId.value.trim() || "",
             github_branch: el.branch.value.trim() || "main",
             version_retention_count: Number(el.versionRetention.value || "7"),
-            sync_interval_minutes: Number(el.syncInterval.value || "1440"),
+            scheduler_timezone: el.schedulerTimezone.value.trim(),
+            sync_include_patterns: el.syncIncludePatterns.value,
+            sync_exclude_patterns: el.syncExcludePatterns.value,
+            clean_preserve_paths: el.cleanPreservePaths.value,
             dry_run: el.dryRun.checked,
             auto_sync_enabled: el.autoSyncEnabled.checked,
             auto_sync_days: getSelectedDays(),
@@ -1248,7 +1312,8 @@
             include_backups: el.includeBackups.checked,
             include_www: el.includeWww.checked,
             sync_mode: el.syncMode.value,
-          };
+          precommit_mode: el.precommitMode.value,
+        };
           await fetchJson(apiUrl("/api/options"), { method: "POST", body: JSON.stringify(payload) });
           setStatus("Settings saved");
           await Promise.all([loadStatus(), loadDeviceFlowStatus()]);
