@@ -16,10 +16,10 @@ A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConf
 **Private repositories are strongly recommended.** Use caution with public repos and any two-way sync tools that also write to your Home Assistant config tree — they can cause local config loss or unexpected deletions.
 
 <!-- VERSION:START -->
-- Integration version: `1.6.0`
-- Add-on version: `1.6.0`
+- Integration version: `1.6.1`
+- Add-on version: `1.6.1`
 - Channel: `stable`
-- Release tag: `v1.6.0`
+- Release tag: `v1.6.1`
 <!-- VERSION:END -->
 
 ## Features
