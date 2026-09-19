@@ -1,8 +1,13 @@
 # Changelog
 
-## Latest Releases
-
 ## Unreleased
+
+## 1.6.2
+
+- **Chore**: Version bumps now promote the top "Unreleased" changelog section into the released version, keeping the repo-root, add-on, and app changelogs in sync (via `scripts/sync_versions.py`).
+- **Chore**: Release notes are now published as GitHub releases (`vX.Y.Z`) so the Home Assistant update page shows only the changelog differences between the installed version and the update (`scripts/create_release.py`).
+
+## 1.6.1
 
 - **Feature**: Allow-list ("whitelist") sync mode is now meaningful and enabled by default — only files matching the configured include patterns are synced, so unrelated files never end up in the repo. Patterns are owned per installation: editable `*.yaml`-style lists for includes, excludes, and clean-upload preserve paths (new `sync_include_patterns`, `sync_exclude_patterns`, `clean_preserve_paths` options).
 - **Fix**: Files that fall off the allow-list (or are excluded/preserved) are no longer deleted from GitHub — unmatched remote files are left untouched during normal and clean uploads.

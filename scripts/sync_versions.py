@@ -17,11 +17,18 @@ DOC_PATHS = [
     REPO_ROOT / "addons/github-config-sync/README.md",
     REPO_ROOT / "PROJECT.md",
 ]
+CHANGELOG_PATHS = [
+    REPO_ROOT / "CHANGELOG.md",
+    REPO_ROOT / "addons/github-config-sync/CHANGELOG.md",
+    REPO_ROOT / "addons/github-config-sync/rootfs/app/CHANGELOG.md",
+]
 
 VERSION_BLOCK_PATTERN = re.compile(
     r"<!-- VERSION:START -->.*?<!-- VERSION:END -->",
     flags=re.DOTALL,
 )
+CHANGELOG_H1_PATTERN = re.compile(r"^#[^\n]*\n")
+UNRELEASED_PATTERN = re.compile(r"(?m)^## Unreleased[ \t]*\n")
 
 
 def _assert_simple_version(value: str, flag_name: str) -> None:
@@ -92,6 +99,27 @@ def _replace_server_version(content: str, addon_version: str) -> str:
     return content
 
 
+def _replace_changelog_released(content: str, version: str) -> str:
+    """Promote the top '## Unreleased' changelog section to the released version.
+
+    A fresh empty '## Unreleased' section is re-inserted under the file title so
+    the next release accumulates its notes there. Re-running on a version that
+    already has a heading is a no-op.
+    """
+    if not content:
+        return content
+    h1_match = CHANGELOG_H1_PATTERN.match(content)
+    if h1_match is None:
+        raise ValueError("Could not find changelog title line")
+    if f"## {version}" in content:
+        return content
+    updated, count = UNRELEASED_PATTERN.subn(f"## {version}\n", content, count=1)
+    if count != 1:
+        raise ValueError("Could not find '## Unreleased' section in changelog")
+    h1 = h1_match.group(0)
+    return updated.replace(h1, f"{h1}\n## Unreleased\n", 1)
+
+
 def _replace_doc_block(content: str, integration_version: str, addon_version: str, channel: str) -> str:
     block = "\n".join(
         [
@@ -147,6 +175,9 @@ def main() -> int:
             addon_version=addon_version,
             channel=args.channel,
         )
+    for path in CHANGELOG_PATHS:
+        if path.exists():
+            planned_updates[path] = _replace_changelog_released(_read(path), addon_version)
 
     changed_paths = [path for path, new_content in planned_updates.items() if _read_optional(path) != new_content]
 
