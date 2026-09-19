@@ -183,6 +183,19 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 - **Fix**: Reset to Defaults button for ignore patterns was missing event handler (Uncaught TypeError)
 - **Fix**: Add-on rebuild via Supervisor API now works correctly
 
+### Next (Unreleased) — Allow-list Sync & Security
+
+- **Feature**: Allow-list sync replaces "sync everything" as the default (`sync_mode: whitelist`) — only files matching the configured include patterns are uploaded; editable `sync_include_patterns`, `sync_exclude_patterns`, and `clean_preserve_paths` options
+- **Fix**: Previously synced files that fall off the allow-list (or are excluded/preserved) are no longer deleted from GitHub; clean upload only touches files in the current sync scope
+- **Security**: Saved GitHub token encrypted at rest (Fernet, `enc:v1:`) on disk and Supervisor sync, decrypting transparently in `_merge_options`; no-op without `cryptography` (Dockerfile now installs `py3-cryptography`)
+- **Fix**: New `scheduler_timezone` option (IANA name) controls scheduled sync timing; defaults to server local time
+- **Fix**: Global 0.25s GitHub API throttle (#24) and 2 sync workers reduce secondary rate-limit errors
+- **Fix**: Sync log lines redacted with the same patterns as diagnostics
+- **Fix**: Device Flow OAuth client ID now configurable via `github_client_id` option/UI
+- **Feature**: Pre-commit gate runs before any push — files about to be uploaded are staged into a throwaway worktree and checked with pre-commit hooks (`prek`, `repo: builtin` offline); the effective config is `{config_root}/.pre-commit-config.yaml` with a bundled offline default fallback; new `precommit_mode` option (`enabled` blocks the upload with a report, `warn` logs only, `disabled` skips); binary shipped in the image; user files are never modified
+- **Platform**: Add-on now targets `amd64` and `aarch64` only — base image `ghcr.io/home-assistant/base:3.24-2026.08.0` is multi-arch and HA deprecated armv7/armhf/i386 support, so those builds are no longer published
+- **Chore**: Removed duplicated `DEFAULT_IGNORE_PATTERNS` from the `custom_components` stub (`sync/hashing.py` is the single source); removed leftover `sync_interval_minutes`; added pre-commit (gitleaks), gitleaks GitHub Action, Dependabot, issue templates
+
 ### v1.5.0–v1.5.4 — Security Hardening & Token Sync Fix
 
 - Security fix: Sensitive file scanning now actually blocks uploads (was report-only)

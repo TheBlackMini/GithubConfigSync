@@ -14,10 +14,10 @@ Home Assistant **add-on** for syncing your config folder to GitHub. This is a co
 **Private repositories are strongly recommended.** Use caution with public repos and any two-way sync tools that also write to your Home Assistant config tree — they can cause local config loss or unexpected deletions.
 
 <!-- VERSION:START -->
-- Integration version: `1.5.22`
-- Add-on version: `1.5.22`
+- Integration version: `1.6.0`
+- Add-on version: `1.6.0`
 - Channel: `stable`
-- Release tag: `v1.5.22`
+- Release tag: `v1.6.0`
 <!-- VERSION:END -->
 
 ## Support me
@@ -70,6 +70,21 @@ The following are excluded from sync by default:
 - **Temp/junk:** `*.tmp`, `*.swp`, `*.pyc`, `*.log`, `*.smbdelete*`, `.DS_Store`, `Thumbs.db`, `.ha_fix_yaml.py`
 
 You can add extra patterns in the app UI. Live uploads also write a root `SECURITY_UPLOAD_WARNINGS.md` file when suspicious files are skipped.
+
+## Sync Scope (allow-list mode)
+
+The add-on syncs an **allow-list by default**. In `whitelist` mode only files matching the configured include patterns (in the **Sync scope** section of the UI) are uploaded, so unrelated files never end up in your repo:
+
+- **Include patterns** — fnmatch-style, one per line (e.g. `*.yaml`, `*.json`, `themes`, `packages`). A directory name also matches everything beneath it. An empty list means *sync nothing*.
+- **Exclude patterns** — never synced, in either mode.
+- **Clean-upload preserve paths** — never deleted by a clean upload, no matter the mode.
+- Enabled mount points (`/media`, `/share`, `/ssl`, `/backups`, `/www`, `/addon_configs`) sync their contents wholesale regardless of include patterns.
+
+In `blacklist` mode the legacy behavior is kept: everything is synced except ignored, excluded, and sensitive files. Files that fall off the allow-list are **not** deleted from GitHub — previously synced remote files are left untouched unless you run a clean upload against a repo you own.
+
+## Pre-commit gate
+
+Before any file is pushed, the add-on checks copies of the about-to-be-uploaded files with pre-commit hooks and blocks the push on violations (configurable: `enabled` blocks, `warn` logs only, `disabled` skips). Hooks come from `.pre-commit-config.yaml` in your HA config folder or a bundled offline builtin default; runs on the fast Rust `prek` runner shipped in the image (amd64/aarch64).
 
 ## Notes
 
