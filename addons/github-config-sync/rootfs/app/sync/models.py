@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from .hashing import DEFAULT_INCLUDE_PATTERNS
 
 
 @dataclass(frozen=True)
@@ -18,6 +20,10 @@ class SyncConfig:
     include_www: bool = True
     include_addon_configs: bool = False
     sync_mode: str = "whitelist"
+    sync_include_patterns: tuple[str, ...] = DEFAULT_INCLUDE_PATTERNS
+    sync_exclude_patterns: tuple[str, ...] = ()
+    clean_preserve_paths: tuple[str, ...] = ()
+    precommit_mode: str = "enabled"
 
 
 @dataclass(frozen=True)

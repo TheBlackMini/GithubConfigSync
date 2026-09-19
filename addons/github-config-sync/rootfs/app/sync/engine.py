@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .errors import SyncError
 from .github_client import GitHubClient
-from .hashing import build_hash_index, diff_hash_indexes, scan_sensitive_files
+from .hashing import build_hash_index, diff_hash_indexes, path_matches_patterns, scan_sensitive_files
 from .models import SyncConfig, SyncPlan, SyncResult
 
 
@@ -51,7 +51,8 @@ class SyncEngine:
 
     def plan(self) -> tuple[SyncPlan, dict[str, str]]:
         current_hash_index = self._build_hash_index()
-        added, changed, removed = diff_hash_indexes(self._previous_hash_index, current_hash_index)
+        previous_hash_index = self._in_scope_baseline()
+        added, changed, removed = diff_hash_indexes(previous_hash_index, current_hash_index)
         plan = SyncPlan(
             added=added,
             changed=changed,
@@ -63,7 +64,7 @@ class SyncEngine:
     def clean_plan(self) -> tuple[SyncPlan, dict[str, str]]:
         current_hash_index = self._build_hash_index()
         all_paths = sorted(current_hash_index.keys())
-        removed_paths = sorted(path for path in self._previous_hash_index.keys() if path not in current_hash_index)
+        removed_paths = sorted(path for path in self._in_scope_baseline() if path not in current_hash_index)
         plan = SyncPlan(
             added=all_paths,
             changed=[],
@@ -180,6 +181,8 @@ class SyncEngine:
         head_sha = self._github.get_branch_head_sha()
         base_tree_sha = self._github.get_commit_tree_sha(head_sha)
         deletions = self._collect_remote_deletions("")
+        in_scope = self._in_clean_scope
+        deletions = [item for item in deletions if in_scope(str(item.get("path", "")))]
         self._progress_callback(
             {
                 "status": "running",
@@ -233,6 +236,8 @@ class SyncEngine:
             if item_type == "dir":
                 self._delete_remote_tree(item_path)
                 continue
+            if not self._in_clean_scope(item_path):
+                continue
             sha = item.get("sha")
             if not isinstance(sha, str):
                 continue
@@ -252,6 +257,8 @@ class SyncEngine:
             if item_type == "dir":
                 deletions.extend(self._collect_remote_deletions(item_path))
                 continue
+            if not self._in_clean_scope(item_path):
+                continue
             deletions.append({"path": item_path, "mode": "100644", "type": "blob", "sha": None})
         return deletions
 
@@ -261,7 +268,7 @@ class SyncEngine:
         synced_count = 0
         skipped_count = 0
         cancelled = False
-        with ThreadPoolExecutor(max_workers=min(4, len(upsert_paths))) as executor:
+        with ThreadPoolExecutor(max_workers=min(2, len(upsert_paths))) as executor:
             futures = {}
             total = len(upsert_paths)
             for index, relative in enumerate(upsert_paths):
@@ -326,7 +333,7 @@ class SyncEngine:
         deleted_count = 0
         skipped_count = 0
         cancelled = False
-        with ThreadPoolExecutor(max_workers=min(4, len(removed_paths))) as executor:
+        with ThreadPoolExecutor(max_workers=min(2, len(removed_paths))) as executor:
             futures = {}
             total = len(removed_paths)
             for index, relative in enumerate(removed_paths):
@@ -407,6 +414,49 @@ class SyncEngine:
             if local_path.exists():
                 self._put_with_retry(remote_path, local_path.read_bytes(), message=f"sync: restore {remote_path}")
 
+    def _in_whitelist_scope(self, key: str) -> bool:
+        if self._config.sync_mode != "whitelist":
+            return True
+        if not self._config.sync_include_patterns:
+            return False
+        return path_matches_patterns(key, self._config.sync_include_patterns)
+
+    def _matches_patterns(self, key: str, patterns: tuple[str, ...]) -> bool:
+        return bool(patterns) and path_matches_patterns(key, patterns)
+
+    def _excluded(self, key: str) -> bool:
+        return self._matches_patterns(key, self._config.sync_exclude_patterns)
+
+    def _in_clean_scope(self, key: str) -> bool:
+        """Whether a remote path is owned by this sync and may be processed.
+
+        Paths excluded by sync_exclude_patterns, preserved via clean_preserve_paths
+        or outside the whitelist scope are left untouched on the remote.
+        """
+        if self._excluded(key):
+            return False
+        if self._matches_patterns(key, self._config.clean_preserve_paths):
+            return False
+        prefix = key.split("/", 1)[0]
+        if prefix in {"media", "share", "ssl", "backups", "www", "addon_configs"}:
+            return self._root_enabled(prefix)
+        return self._in_whitelist_scope(key)
+
+    def _in_scope_baseline(self) -> dict[str, str]:
+        """Previous index restricted to paths still owned by this sync.
+
+        Files that fell off the whitelist or are excluded/preserved are no
+        longer compared, so they are left alone on the remote instead of
+        being deleted.
+        """
+        if not self._config.sync_include_patterns:
+            return {}
+        return {
+            key: digest
+            for key, digest in self._previous_hash_index.items()
+            if self._in_clean_scope(key)
+        }
+
     def _build_hash_index(self) -> dict[str, str]:
         self._sensitive_files = scan_sensitive_files(self._config_root)
         index: dict[str, str] = {}
@@ -416,6 +466,12 @@ class SyncEngine:
             current = build_hash_index(root)
             for relative, digest in current.items():
                 key = f"{prefix}/{relative}" if prefix else relative
+                if self._excluded(key):
+                    continue
+                if self._matches_patterns(key, self._config.clean_preserve_paths):
+                    continue
+                if prefix == "" and not self._in_whitelist_scope(relative):
+                    continue
                 index[key] = digest
         return index
 

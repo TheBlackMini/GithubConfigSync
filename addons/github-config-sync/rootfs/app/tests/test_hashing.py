@@ -4,21 +4,20 @@ import tempfile
 import unittest
 from pathlib import Path
 import sys
-import importlib.util
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
-from sync.hashing import build_hash_index, diff_hash_indexes, _is_file_sensitive, scan_sensitive_files
-
-CONST_PATH = Path(__file__).resolve().parents[5] / "custom_components/github_config_sync/const.py"
-CONST_SPEC = importlib.util.spec_from_file_location("github_config_sync_const", CONST_PATH)
-if CONST_SPEC is None or CONST_SPEC.loader is None:
-    raise unittest.SkipTest("Could not load const module")
-_const = importlib.util.module_from_spec(CONST_SPEC)
-CONST_SPEC.loader.exec_module(_const)
-DEFAULT_IGNORE_PATTERNS = _const.DEFAULT_IGNORE_PATTERNS
+from sync.hashing import (
+    IGNORE_DIRS,
+    IGNORE_PATTERNS,
+    build_hash_index,
+    diff_hash_indexes,
+    path_matches_patterns,
+    _is_file_sensitive,
+    scan_sensitive_files,
+)
 
 
 class HashingTests(unittest.TestCase):
@@ -137,14 +136,28 @@ class HashingTests(unittest.TestCase):
             self.assertEqual(flagged, [])
 
     def test_default_ignore_patterns_cover_common_home_assistant_files(self) -> None:
-        self.assertIn("secrets.yaml", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn("ip_bans.yaml", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn("known_devices.yaml", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn(".storage/", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn(".cloud/", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn(".ruff.toml", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn("core.config_entries", DEFAULT_IGNORE_PATTERNS)
-        self.assertIn(".env", DEFAULT_IGNORE_PATTERNS)
+        self.assertIn("secrets.yaml", IGNORE_PATTERNS)
+        self.assertIn("ip_bans.yaml", IGNORE_PATTERNS)
+        self.assertIn("known_devices.yaml", IGNORE_PATTERNS)
+        self.assertIn(".storage", IGNORE_DIRS)
+        self.assertIn(".cache", IGNORE_DIRS)
+        self.assertIn(".ruff.toml", IGNORE_PATTERNS)
+        self.assertIn("core.config_entries", IGNORE_PATTERNS)
+        self.assertIn(".env", IGNORE_PATTERNS)
+
+    def test_path_matches_patterns_matches_extensions_and_dirs(self) -> None:
+        patterns = ("*.yaml", "themes", ".gitignore", "packages")
+        self.assertTrue(path_matches_patterns("automations.yaml", patterns))
+        self.assertTrue(path_matches_patterns("sub/dir/config.yaml", patterns))
+        self.assertTrue(path_matches_patterns("themes/board/theme.yaml", patterns))
+        self.assertTrue(path_matches_patterns("packages/kitchen.yaml", patterns))
+        self.assertFalse(path_matches_patterns("notes.txt", patterns))
+        self.assertFalse(path_matches_patterns(".github/workflows/ci.yml", patterns))
+        self.assertFalse(path_matches_patterns("configuration.json", patterns))
+
+    def test_path_matches_patterns_case_insensitive(self) -> None:
+        self.assertTrue(path_matches_patterns("AUTOMATIONS.YAML", ("*.yaml",)))
+        self.assertTrue(path_matches_patterns("Packages/Kitchen.YAML", ("packages", "*.yaml")))
 
     def test_diff_hash_indexes_returns_expected_added_changed_removed(self) -> None:
         previous = {"a.yaml": "1", "b.yaml": "2"}
