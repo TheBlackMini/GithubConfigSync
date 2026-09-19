@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -81,10 +82,8 @@ def _stage_worktree(files: list[tuple[str, Path]], config_text: str) -> Path:
 
 
 def _prek_env() -> dict[str, str]:
-    env = {
-        "PREK_COLOR": "never",
-        "PATH": "/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin",
-    }
+    env = dict(os.environ)
+    env["PREK_COLOR"] = "never"
     prek_home = env.get("PREK_HOME")
     if not prek_home:
         data_root = Path("/data")
