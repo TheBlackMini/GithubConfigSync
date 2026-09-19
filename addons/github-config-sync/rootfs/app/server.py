@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import hashlib
 import json
@@ -19,7 +20,20 @@ from flask import Flask, jsonify, request, send_from_directory
 from sync import SyncConfig, SyncEngine
 from sync.errors import SyncError
 from sync.github_client import GitHubClient
-from sync.hashing import IGNORE_PATTERNS
+from sync.hashing import DEFAULT_INCLUDE_PATTERNS, IGNORE_PATTERNS
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # pragma: no cover - Python <3.9
+    ZoneInfo = None  # type: ignore[assignment]
+
+try:
+    from cryptography.fernet import Fernet
+    _CRYPTO_AVAILABLE = True
+except ImportError:
+    _CRYPTO_AVAILABLE = False
+
+_ENCRYPTED_PREFIX = "enc:v1:"
 
 def _read_addon_version() -> str:
     """Read version from the add-on config.yaml (single source of truth)."""
@@ -194,7 +208,6 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "auto_sync_days": [1, 2, 3, 4, 5],
     "auto_sync_time": "03:00",
     "auto_sync_create_release": True,
-    "sync_interval_minutes": 1440,
     "include_addon_configs": False,
     "include_media": False,
     "include_share": False,
@@ -202,6 +215,8 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "include_backups": False,
     "include_www": False,
     "sync_mode": "whitelist",
+    "scheduler_timezone": "",
+    "precommit_mode": "enabled",
 }
 
 
@@ -219,6 +234,71 @@ def _repo_safety_state(engine: SyncEngine) -> tuple[bool, str]:
     return False, "Repository was not created by this add-on and is not empty"
 
 
+def _pattern_list(value: Any) -> tuple[str, ...]:
+    """Normalize a comma/newline separated pattern string into a tuple."""
+    if value is None:
+        return ()
+    if isinstance(value, (tuple, list)):
+        raw_items: list[Any] = list(value)
+    else:
+        raw_items = str(value).replace(",", "\n").splitlines()
+    return tuple(
+        item.strip()
+        for item in raw_items
+        if isinstance(item, str) and item.strip()
+    )
+
+
+def _encryption_key() -> bytes | None:
+    for candidate in (Path("/etc/machine-id"), Path("/data/machine-id")):
+        try:
+            raw = candidate.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError):
+            raw = ""
+        if raw:
+            return base64.urlsafe_b64encode(hashlib.sha256(raw.encode()).digest())
+    return None
+
+
+def _encrypt_secret(plaintext: str) -> str:
+    if not _CRYPTO_AVAILABLE or not plaintext or plaintext.startswith(_ENCRYPTED_PREFIX):
+        return plaintext
+    key = _encryption_key()
+    if not key:
+        return plaintext
+    try:
+        digest = Fernet(key).encrypt(plaintext.encode("utf-8")).decode("ascii")
+        return f"{_ENCRYPTED_PREFIX}{digest}"
+    except Exception as err:  # pylint: disable=broad-except
+        logging.getLogger(__name__).warning("Secrets encryption failed: %s", err)
+        return plaintext
+
+
+def _decrypt_secret(value: str) -> str:
+    if not _CRYPTO_AVAILABLE or not value or not value.startswith(_ENCRYPTED_PREFIX):
+        return value
+    key = _encryption_key()
+    if not key:
+        return value
+    try:
+        return Fernet(key).decrypt(value[len(_ENCRYPTED_PREFIX) :].encode("ascii")).decode("utf-8")
+    except Exception as err:  # pylint: disable=broad-except
+        logging.getLogger(__name__).warning("Secrets decryption failed: %s", err)
+        return value
+
+
+def _current_local_now() -> dt.datetime:
+    """Now in the configured scheduler IANA timezone, falling back to container local."""
+    merged = _merge_options()
+    tz_name = str(merged.get("scheduler_timezone", "")).strip()
+    if ZoneInfo is not None and tz_name:
+        try:
+            return dt.datetime.now(ZoneInfo(tz_name))
+        except Exception as err:  # pylint: disable=broad-except
+            logging.getLogger(__name__).warning("Invalid scheduler_timezone %r: %s", tz_name, err)
+    return dt.datetime.now(dt.timezone.utc).astimezone()
+
+
 def _repo_sync_config(options: dict[str, Any], repository: str) -> SyncConfig:
     return SyncConfig(
         repository=repository,
@@ -234,6 +314,10 @@ def _repo_sync_config(options: dict[str, Any], repository: str) -> SyncConfig:
         include_www=bool(options.get("include_www", False)),
         include_addon_configs=bool(options.get("include_addon_configs", False)),
         sync_mode=str(options.get("sync_mode", "whitelist")),
+        sync_include_patterns=_pattern_list(options.get("sync_include_patterns")) or DEFAULT_INCLUDE_PATTERNS,
+        sync_exclude_patterns=_pattern_list(options.get("sync_exclude_patterns")),
+        clean_preserve_paths=_pattern_list(options.get("clean_preserve_paths")),
+        precommit_mode=str(options.get("precommit_mode", "enabled")),
     )
 
 
@@ -345,6 +429,8 @@ def _merge_options() -> dict[str, Any]:
     options = dict(DEFAULT_OPTIONS)
     options.update(_load_json(SUPERVISOR_OPTIONS_PATH, {}))
     options.update(_load_json(WEBUI_OPTIONS_PATH, {}))
+    token = str(options.get("github_token", "")).strip()
+    options["github_token"] = _decrypt_secret(token)
     return options
 
 
@@ -398,8 +484,20 @@ def _clear_sync_progress_state() -> dict[str, Any]:
 
 
 def _persist_options(payload: dict[str, Any]) -> None:
-    _save_json(SUPERVISOR_OPTIONS_PATH, payload)
-    _save_json(WEBUI_OPTIONS_PATH, payload)
+    serialized = _serialized_options(payload)
+    _save_json(SUPERVISOR_OPTIONS_PATH, serialized)
+    _save_json(WEBUI_OPTIONS_PATH, serialized)
+
+
+def _serialized_options(payload: dict[str, Any]) -> dict[str, Any]:
+    """Copy of options suitable for disk/HTTP: secrets encrypted, patterns as text."""
+    serialized = dict(payload)
+    token = str(serialized.get("github_token", "")).strip()
+    serialized["github_token"] = _encrypt_secret(token)
+    for key in ("sync_include_patterns", "sync_exclude_patterns", "clean_preserve_paths"):
+        patterns = _pattern_list(serialized.get(key))
+        serialized[key] = "\n".join(patterns)
+    return serialized
 
 
 def _sync_options_to_supervisor(payload: dict[str, Any]) -> None:
@@ -416,7 +514,7 @@ def _sync_options_to_supervisor(payload: dict[str, Any]) -> None:
         logger.debug("SUPERVISOR_TOKEN not set; skipping Supervisor sync")
         return
     url = "http://supervisor/addons/self/options"
-    data = json.dumps({"options": payload}).encode("utf-8")
+    data = json.dumps({"options": _serialized_options(payload)}).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
@@ -443,7 +541,7 @@ def _append_log(message: str) -> None:
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     timestamp = dt.datetime.now(dt.timezone.utc).isoformat()
     with LOG_PATH.open("a", encoding="utf-8") as handle:
-        handle.write(f"[{timestamp}] {message}\n")
+        handle.write(f"[{timestamp}] {_redact_line(message)}\n")
 
 
 def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
@@ -498,6 +596,9 @@ def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
     sync_mode = str(payload.get("sync_mode", "whitelist")).strip()
     if sync_mode not in ("whitelist", "blacklist"):
         return False, "sync_mode must be whitelist or blacklist"
+    precommit_mode = str(payload.get("precommit_mode", "enabled")).strip()
+    if precommit_mode not in ("enabled", "warn", "disabled"):
+        return False, "precommit_mode must be enabled, warn, or disabled"
 
     for key in (
         "include_addon_configs",
@@ -509,6 +610,13 @@ def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
     ):
         if not isinstance(payload.get(key), bool):
             return False, f"{key} must be true or false"
+
+    scheduler_timezone = str(payload.get("scheduler_timezone", "")).strip()
+    if scheduler_timezone and ZoneInfo is not None:
+        try:
+            ZoneInfo(scheduler_timezone)
+        except Exception as err:  # pylint: disable=broad-except
+            return False, f"scheduler_timezone must be a valid IANA timezone: {err}"
 
     return True, None
 
@@ -777,6 +885,10 @@ def _sync_config(options: dict[str, Any]) -> SyncConfig:
         include_www=bool(options.get("include_www", False)),
         include_addon_configs=bool(options.get("include_addon_configs", False)),
         sync_mode=str(options.get("sync_mode", "whitelist")),
+        sync_include_patterns=_pattern_list(options.get("sync_include_patterns")) or DEFAULT_INCLUDE_PATTERNS,
+        sync_exclude_patterns=_pattern_list(options.get("sync_exclude_patterns")),
+        clean_preserve_paths=_pattern_list(options.get("clean_preserve_paths")),
+        precommit_mode=str(options.get("precommit_mode", "enabled")),
     )
 
 
@@ -929,7 +1041,7 @@ class _SyncScheduler:
             if not options.get("github_token") or not options.get("github_repository"):
                 return
             now = dt.datetime.now(dt.timezone.utc)
-            local_now = now.astimezone()
+            local_now = _current_local_now()
             day_of_week = local_now.isoweekday()
             auto_days = options.get("auto_sync_days", [])
             if isinstance(auto_days, str):
@@ -974,9 +1086,13 @@ class _SyncScheduler:
                 include_www=bool(options.get("include_www", False)),
                 include_addon_configs=bool(options.get("include_addon_configs", False)),
                 sync_mode=str(options.get("sync_mode", "whitelist")),
+                sync_include_patterns=_pattern_list(options.get("sync_include_patterns")) or DEFAULT_INCLUDE_PATTERNS,
+                sync_exclude_patterns=_pattern_list(options.get("sync_exclude_patterns")),
+                clean_preserve_paths=_pattern_list(options.get("clean_preserve_paths")),
+                precommit_mode=str(options.get("precommit_mode", "enabled")),
             )
             now = dt.datetime.now(dt.timezone.utc)
-            local_now = now.astimezone()
+            local_now = _current_local_now()
             tag_name = f"sync-{local_now.strftime('%d/%m/%y-%H/%M/%S').replace('/', '-')}"
             release_name = f"Sync {local_now.strftime('%d/%m/%y %H:%M:%S')}"
             if not dry_run and options.get("auto_sync_create_release", True):
@@ -1006,6 +1122,7 @@ class _SyncScheduler:
             scan: dict[str, Any] | None = None
             try:
                 engine = SyncEngine(sync_config, previous_hash_index=_load_json(HASH_INDEX_PATH, {}))
+                engine.set_log_callback(_append_log)
                 engine.set_progress_callback(lambda payload: _save_state(_sync_progress_payload(payload)))
                 plan, current_hash_index = engine.plan()
                 scan = _plan_summary(plan)
@@ -1168,9 +1285,14 @@ def trigger_manual_sync():
             include_www=sync_config.include_www,
             include_addon_configs=sync_config.include_addon_configs,
             sync_mode=sync_config.sync_mode,
+            sync_include_patterns=sync_config.sync_include_patterns,
+            sync_exclude_patterns=sync_config.sync_exclude_patterns,
+            clean_preserve_paths=sync_config.clean_preserve_paths,
+            precommit_mode=sync_config.precommit_mode,
         )
         engine = SyncEngine(sync_config, previous_hash_index=_load_json(HASH_INDEX_PATH, {}))
         engine.set_cancel_checker(_is_cancel_requested)
+        engine.set_log_callback(_append_log)
         engine.set_progress_callback(lambda payload: _save_state(_sync_progress_payload(payload)))
         plan, current_hash_index = engine.plan()
         scan = _plan_summary(plan)
@@ -1271,6 +1393,11 @@ def set_options():
         "include_backups": payload.get("include_backups", False),
         "include_www": payload.get("include_www", False),
         "sync_mode": str(payload.get("sync_mode", "whitelist")).strip() or "whitelist",
+        "sync_include_patterns": _pattern_list(payload.get("sync_include_patterns")) or list(DEFAULT_INCLUDE_PATTERNS),
+        "sync_exclude_patterns": list(_pattern_list(payload.get("sync_exclude_patterns"))),
+        "clean_preserve_paths": list(_pattern_list(payload.get("clean_preserve_paths"))),
+        "scheduler_timezone": str(payload.get("scheduler_timezone", "")).strip(),
+        "precommit_mode": str(payload.get("precommit_mode", "enabled")).strip() or "enabled",
     }
 
     valid, message = _validate_payload(candidate)
@@ -1624,6 +1751,10 @@ def create_repo():
                 include_www=bool(options.get("include_www", False)),
                 include_addon_configs=bool(options.get("include_addon_configs", False)),
                 sync_mode=str(options.get("sync_mode", "whitelist")),
+                sync_include_patterns=_pattern_list(options.get("sync_include_patterns")) or DEFAULT_INCLUDE_PATTERNS,
+                sync_exclude_patterns=_pattern_list(options.get("sync_exclude_patterns")),
+                clean_preserve_paths=_pattern_list(options.get("clean_preserve_paths")),
+                precommit_mode=str(options.get("precommit_mode", "enabled")),
             ),
             previous_hash_index={},
         )
@@ -1816,6 +1947,10 @@ def trigger_clean_sync():
         include_www=sync_config.include_www,
         include_addon_configs=sync_config.include_addon_configs,
         sync_mode=sync_config.sync_mode,
+        sync_include_patterns=sync_config.sync_include_patterns,
+        sync_exclude_patterns=sync_config.sync_exclude_patterns,
+        clean_preserve_paths=sync_config.clean_preserve_paths,
+        precommit_mode=sync_config.precommit_mode,
     )
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     _save_state({"status": "running", "last_run": started, "last_error": None, **_clear_sync_progress_state()})
@@ -1840,6 +1975,7 @@ def trigger_clean_sync():
             _append_log(f"Clean upload blocked: {reason}")
             return jsonify({"ok": False, "error": reason, "state": state}), 400
         engine.set_cancel_checker(_is_cancel_requested)
+        engine.set_log_callback(_append_log)
         engine.set_progress_callback(lambda payload: _save_state(_sync_progress_payload(payload)))
         engine.clean_remote_tree()
         plan, current_hash_index = engine.clean_plan()

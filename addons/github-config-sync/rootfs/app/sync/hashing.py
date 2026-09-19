@@ -3,7 +3,25 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import re
+from collections.abc import Iterable
 from pathlib import Path
+
+DEFAULT_INCLUDE_PATTERNS = (
+    "*.yaml",
+    "*.yml",
+    "*.json",
+    "*.toml",
+    "*.ini",
+    "*.txt",
+    "*.md",
+    "*.sh",
+    ".gitignore",
+    "themes",
+    "packages",
+    "blueprints",
+    "people",
+    "customize",
+)
 
 IGNORE_DIRS = {
     ".storage",
@@ -99,6 +117,8 @@ def _file_contains_sensitive_content(path: Path) -> bool:
             sample = handle.read(MAX_CONTENT_SCAN_BYTES)
     except OSError:
         return False
+    except Exception:
+        return False
     text = sample.decode("utf-8", errors="ignore")
     return any(pattern.search(text) for pattern in SENSITIVE_CONTENT_PATTERNS)
 
@@ -113,11 +133,14 @@ def scan_sensitive_files(root: Path) -> list[str]:
         relative = path.relative_to(root).as_posix()
         if _is_hard_ignored(relative):
             continue
-        reasons = []
-        if is_sensitive_candidate(relative):
-            reasons.append("name")
-        if _file_contains_sensitive_content(path):
-            reasons.append("content")
+        try:
+            reasons = []
+            if is_sensitive_candidate(relative):
+                reasons.append("name")
+            if _file_contains_sensitive_content(path):
+                reasons.append("content")
+        except Exception:
+            reasons = []
         if reasons:
             flagged.append(relative)
     return sorted(set(flagged))
@@ -167,3 +190,21 @@ def diff_hash_indexes(previous: dict[str, str], current: dict[str, str]) -> tupl
         key for key in (current_keys & previous_keys) if previous.get(key) != current.get(key)
     )
     return added, changed, removed
+
+
+def path_matches_patterns(relative_path: str, patterns: Iterable[str]) -> bool:
+    """Match a relative path against fnmatch-style patterns.
+
+    `*` matches across directory separators and matching a directory pattern
+    also matches everything beneath that directory. Matching is case-insensitive.
+    """
+    normalized = relative_path.replace("\\", "/").lower()
+    for raw in patterns:
+        pattern = str(raw).strip().rstrip("/").lower()
+        if not pattern:
+            continue
+        if fnmatch.fnmatch(normalized, pattern):
+            return True
+        if fnmatch.fnmatch(normalized, f"{pattern}/*"):
+            return True
+    return False

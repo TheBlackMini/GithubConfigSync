@@ -27,10 +27,10 @@ If you find this project useful, and would like to help support its continued de
 ## Version Tracker
 
 <!-- VERSION:START -->
-- Integration version: `1.5.22`
-- Add-on version: `1.5.22`
+- Integration version: `1.6.0`
+- Add-on version: `1.6.0`
 - Channel: `stable`
-- Release tag: `v1.5.22`
+- Release tag: `v1.6.0`
 <!-- VERSION:END -->
 
 ## What it provides
@@ -51,6 +51,7 @@ If you find this project useful, and would like to help support its continued de
 - The mount-point checklist lets you include or exclude standard Home Assistant folders, and the recommended .gitignore keeps the ignore list aligned.
 - `dry_run=true` stops after planning and returns the counts that would be applied for manual actions.
 - `dry_run=false` probes the GitHub repository first, then performs upserts and deletes with the GitHub Contents API. Remote deletes never remove local files.
+- Live uploads run a **pre-commit gate** first: the files about to be pushed are copied into a throwaway git worktree and checked with pre-commit hooks before any GitHub write happens; violations block the push (see **Pre-commit gate** below).
 - **Clean Repo** always runs live, empties the remote repo with a fast git-tree reset, and restores the starter files in the same step.
 - Repository creation uses the add-on flow and defaults to `ha-github-config-sync` with private visibility, with an optional public visibility choice.
 - Runtime state is persisted in `/data/state.json`, `/data/hash_index.json`, `/data/device_flow.json`, and `/data/sync.log`.
@@ -62,6 +63,33 @@ If you find this project useful, and would like to help support its continued de
   - `home-assistant.log`, `home-assistant.log.*`, `home-assistant_v2.db`, `home-assistant_v2.db-*`, `secrets.yaml`, `ip_bans.yaml`, `known_devices.yaml`, `.ha_run.lock`, `*.db`, `*.sqlite`, `*.sqlite3`, `*.tmp`, `*.swp`, `*.pyc`, `*.log`, `.yaml_fix_backups`, `.yaml_fix_backups/*`, `.ha_fix_yaml.py`, `.smbdelete*`, `.DS_Store`, `Thumbs.db`
 - Live uploads also write a root `SECURITY_UPLOAD_WARNINGS.md` file when suspicious files are skipped.
 - The add-on writes an internal repo marker on newly created repositories so clean actions and the repo picker only target safe repos.
+
+## Sync scope (allow-list mode)
+
+The add-on syncs an **allow-list by default** (`sync_mode: whitelist`, editable in the **Sync scope** UI section):
+
+- **Include patterns** — only files matching these fnmatch-style patterns (one per line, e.g. `*.yaml`, `*.json`, `themes`, `packages`) are uploaded from the config root. A directory pattern also matches everything beneath it. An empty list means **sync nothing**.
+- **Exclude patterns** — matching paths are never synced, in either mode.
+- **Clean-upload preserve paths** — matching paths are never deleted by a clean upload.
+- Enabled mount points (`/media`, `/share`, `/ssl`, `/backups`, `/www`, `/addon_configs`) sync their contents wholesale, independent of include patterns.
+
+In `blacklist` mode legacy behavior is preserved: everything is synced except ignored, excluded, and sensitive files. Files that fall off the allow-list are never deleted from GitHub; clean uploads only touch files within the current sync scope.
+
+## Pre-commit gate
+
+Before any upload, the add-on runs pre-commit hooks against **copies** of the files about to be pushed and blocks (or warns) based on the **Pre-commit mode** setting:
+
+- **Enabled** (default) — hooks must pass, otherwise the upload is cancelled before a single file reaches GitHub and the report lists the failed hooks/files.
+- **Warn only** — violations are logged but the upload proceeds.
+- **Disabled** — hooks are not run.
+
+Rules are read from `.pre-commit-config.yaml` in your Home Assistant config folder when present; otherwise a bundled default (offline `builtin` hooks: yaml/json/toml lint, merge-conflict, trailing-whitespace, end-of-file, private-key, and large-file checks) is used. The gate uses the fast Rust pre-commit runner `prek` (shipped in the image) and a cached hook store under `/data/.prek`. Your own files are never modified — only temporary copies are checked.
+
+## Security
+
+- The saved GitHub token is encrypted at rest with Fernet (key derived from the supervisor machine-id) wherever options are persisted, and stays masked as `********` in the UI and diagnostics. If the `cryptography` package is unavailable the token is stored in plaintext with a warning.
+- Sync logs are redacted with the same secret patterns as the diagnostics export.
+- GitHub API traffic is globally throttled (min 0.25s between requests) to avoid secondary rate limits.
 
 ## Runbook
 

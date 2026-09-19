@@ -2,6 +2,23 @@
 
 ## Latest Releases
 
+## Unreleased
+
+- **Feature**: Allow-list ("whitelist") sync mode is now meaningful and enabled by default — only files matching the configured include patterns are synced, so unrelated files never end up in the repo. Patterns are owned per installation: editable `*.yaml`-style lists for includes, excludes, and clean-upload preserve paths (new `sync_include_patterns`, `sync_exclude_patterns`, `clean_preserve_paths` options).
+- **Fix**: Files that fall off the allow-list (or are excluded/preserved) are no longer deleted from GitHub — unmatched remote files are left untouched during normal and clean uploads.
+- **Fix**: Clean upload no longer deletes the entire repository tree — only files in the current sync scope are removed; extra/unrelated repo files are preserved.
+- **Fix**: An empty allow-list is respected as "sync nothing" instead of "sync everything to be safe".
+- **Security**: Saved GitHub token at rest is now encrypted (Fernet) using the supervisor machine-id-derived key, on all persistence paths (web UI options, Supervisor options). Falls back to plaintext with a warning only when `cryptography` is unavailable; tokens stay masked as `********` in the UI.
+- **Fix**: Scheduler no longer misbehaves in containers whose timezone differs from the user's — new `scheduler_timezone` option (IANA name, e.g. `Europe/Berlin`) controls when scheduled syncs run; defaults to server local time.
+- **Fix**: GitHub API calls are rate-limited to one request every 0.25s globally and the sync engine uses fewer parallel workers, reducing secondary rate-limit errors during large uploads.
+- **Fix**: Log lines are redacted with the same secret patterns as the diagnostics export before they are written to the sync log.
+- **Fix**: Device Flow OAuth client ID is now configurable in the add-on UI and options (`github_client_id`) instead of only being hardcoded.
+- **Chore**: Removed the duplicated `DEFAULT_IGNORE_PATTERNS` from the legacy `custom_components` stub (`sync/hashing.py` is the single source of truth).
+- **Chore**: Removed the unused `sync_interval_minutes` option (leftover from the pre-scheduler era).
+- **Feature**: A pre-commit gate runs inside the add-on before anything is pushed — files about to be uploaded are copied into a throwaway worktree and checked with pre-commit hooks before any GitHub write happens. Config comes from `.pre-commit-config.yaml` in the Home Assistant config folder (fallback: bundled offline builtin hooks), and a new `precommit_mode` option (`enabled` / `warn` / `disabled`) controls whether violations block the push, are logged only, or are skipped. Uses the fast Rust pre-commit runner `prek`, keyed to a cached hook store under `/data/.prek`.
+- **Breaking**: Official support is now limited to `amd64` and `aarch64` (the Home Assistant base image is multi-arch and armv7/armhf/i386 support is deprecated, so those architectures are no longer published). Base image updated to `ghcr.io/home-assistant/base:3.24-2026.08.0`.
+- **Chore**: Added pre-commit with secret scanning (gitleaks), a gitleaks GitHub Action, Dependabot, and issue templates.
+
 ## 1.5.22
 
 - **Fix**: "Token missing" badge no longer appears when the token is actually fine — a transient GitHub check failure (`error` state) now shows as an amber "Token check failed" badge instead of the red "Token missing", and `/api/status` degrades it back to "Checking token..." so the status poll can never misreport a lost token
