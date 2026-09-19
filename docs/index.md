@@ -35,6 +35,7 @@ a **config sync tool, not a backup tool**.
 | Topic | Page |
 |---|---|
 | Install the add-on and first sync | [Installation](installation.md) |
+| All options, scheduled sync and logging | [Configuration](configuration.md) |
 | Ignore list, clean actions and safety notes | [Syncing](syncing.md) |
 | Architecture, security and release workflow | [Project guide](project-guide.md) |
 | Version history | [Changelog](changelog.md) |

@@ -45,6 +45,7 @@ options:
   include_www: false
   sync_mode: "whitelist"
   precommit_mode: "enabled"
+  log_level: "INFO"
 schema:
   github_repository: str?
   github_branch: str
@@ -62,5 +63,6 @@ schema:
   include_ssl: bool?
   include_backups: bool?
   include_www: bool?
-  sync_mode: list("whitelist","blacklist")?
-  precommit_mode: list("enabled","warn","disabled")?
+  sync_mode: list(whitelist|blacklist)?
+  precommit_mode: list(enabled|warn|disabled)?
+  log_level: list(DEBUG|INFO|WARN|ERROR)?

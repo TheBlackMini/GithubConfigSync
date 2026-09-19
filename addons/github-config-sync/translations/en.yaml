@@ -1,0 +1,98 @@
+configuration:
+  github_repository:
+    name: Target repository
+    description: >-
+      GitHub repository to sync to, formatted owner/repo (for example
+      TheBlackMini/home-assistant-config). Set automatically by the
+      repository picker in the add-on web UI.
+  github_branch:
+    name: Target branch
+    description: >-
+      Branch that files are pushed to. Defaults to main.
+  github_token:
+    name: GitHub token
+    description: >-
+      Set automatically by GitHub Device Flow login in the web UI. Paste a
+      fine-grained PAT here to override. Stored encrypted at rest and masked
+      in the UI.
+  github_client_id:
+    name: GitHub OAuth App Client ID
+    description: >-
+      OAuth client ID used for the GitHub Device Flow login. Override only to
+      use your own OAuth app; most users keep the default.
+  scheduler_timezone:
+    name: Scheduler timezone
+    description: >-
+      IANA timezone (for example Europe/Berlin) used for scheduled sync. Empty
+      uses the server's local timezone. The web UI can copy this from Home
+      Assistant with one click.
+  sync_include_patterns:
+    name: Include patterns
+    description: >-
+      Allow-list patterns used in whitelist mode, one per line (for example
+      *.yaml, *.json, themes). A directory name also matches everything beneath
+      it. An empty list means nothing is synced.
+  sync_exclude_patterns:
+    name: Exclude patterns
+    description: >-
+      Paths that are never synced, in either mode. One pattern per line.
+  clean_preserve_paths:
+    name: Clean-upload preserve paths
+    description: >-
+      Paths that are never deleted by a clean upload, in any mode. One path
+      per line, for example docs or README.md.
+  version_retention_count:
+    name: Version retention count
+    description: >-
+      Maximum number of dated GitHub releases kept (1-100). Older auto-releases
+      are pruned. Defaults to 7.
+  dry_run:
+    name: Dry run
+    description: >-
+      When enabled, syncs are planned and previewed but nothing is pushed to
+      GitHub. Keep enabled until the preview looks correct.
+  include_addon_configs:
+    name: Include /addon_configs
+    description: >-
+      Sync the add-on configs folder wholesale into addon_configs/ in the
+      repository, outside the config allow-list.
+  include_media:
+    name: Include /media
+    description: >-
+      Sync the media folder wholesale into media/ in the repository, outside
+      the config allow-list.
+  include_share:
+    name: Include /share
+    description: >-
+      Sync the share folder wholesale into share/ in the repository, outside
+      the config allow-list.
+  include_ssl:
+    name: Include /ssl
+    description: >-
+      Sync the ssl folder wholesale into ssl/ in the repository, outside the
+      config allow-list. Only enable this on a private repository.
+  include_backups:
+    name: Include /backup
+    description: >-
+      Sync the backups folder (either /backup or /backups) wholesale into
+      backups/ in the repository. Only enable this on a private repository.
+  include_www:
+    name: Include /www
+    description: >-
+      Sync the www folder wholesale into www/ in the repository, outside the
+      config allow-list.
+  sync_mode:
+    name: Sync mode
+    description: >-
+      Whitelist only syncs files matching the include patterns; Blacklist syncs
+      everything except excluded and ignored files (legacy behavior).
+  precommit_mode:
+    name: Pre-commit gate
+    description: >-
+      Enabled blocks the upload when pre-commit hooks fail; Warn only logs the
+      violations and still pushes; Disabled skips the hook check.
+  log_level:
+    name: Log level
+    description: >-
+      Verbosity for GitHub and Home Assistant API logging. DEBUG traces every
+      request (URLs only, never credentials); INFO is the default.

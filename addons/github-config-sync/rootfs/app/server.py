@@ -217,6 +217,7 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     "sync_mode": "whitelist",
     "scheduler_timezone": "",
     "precommit_mode": "enabled",
+    "log_level": "INFO",
 }
 
 
@@ -483,6 +484,55 @@ def _clear_sync_progress_state() -> dict[str, Any]:
     }
 
 
+_SUPERVISOR_TIMEZONE_CACHE: dict[str, Any] = {"at": 0.0, "value": ""}
+
+
+def _supervisor_time_zone() -> str:
+    """Return the Home Assistant time zone from the Supervisor, or '' if unavailable.
+
+    Result is cached for a few minutes; failures fall back silently so the UI
+    treats an empty value as 'use the server default'.
+    """
+    now = time.time()
+    if now - float(_SUPERVISOR_TIMEZONE_CACHE["at"]) < 300:
+        return str(_SUPERVISOR_TIMEZONE_CACHE["value"])
+    value = ""
+    supervisor_token = os.environ.get("SUPERVISOR_TOKEN")
+    logger = logging.getLogger(__name__)
+    if supervisor_token:
+        probes: list[tuple[str, str]] = [
+            ("http://supervisor/core/api/config", "time_zone"),
+            ("http://supervisor/info", "timezone"),
+        ]
+        for url, data_key in probes:
+            try:
+                req = urllib.request.Request(
+                    url, headers={"Authorization": f"Bearer {supervisor_token}"}
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    body = json.loads(resp.read().decode("utf-8") or "{}")
+                candidate = body.get(data_key)
+                if isinstance(candidate, str):
+                    value = candidate
+                    break
+            except Exception as err:  # pylint: disable=broad-except
+                logger.debug("Could not read timezone from %s: %s", url, err)
+    _SUPERVISOR_TIMEZONE_CACHE["at"] = now
+    _SUPERVISOR_TIMEZONE_CACHE["value"] = value
+    return value
+
+
+def _apply_log_level(level: str | None = None) -> None:
+    """Reconfigure the root logger from the log_level option."""
+    configured = str(level or _merge_options().get("log_level", "INFO")).strip() or "INFO"
+    numeric = getattr(logging, configured.upper(), logging.INFO)
+    root = logging.getLogger()
+    root.setLevel(numeric)
+    for handler in root.handlers:
+        handler.setLevel(numeric)
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+
+
 def _persist_options(payload: dict[str, Any]) -> None:
     serialized = _serialized_options(payload)
     _save_json(SUPERVISOR_OPTIONS_PATH, serialized)
@@ -514,6 +564,7 @@ def _sync_options_to_supervisor(payload: dict[str, Any]) -> None:
         logger.debug("SUPERVISOR_TOKEN not set; skipping Supervisor sync")
         return
     url = "http://supervisor/addons/self/options"
+    logger.debug("Syncing options to Supervisor at %s", url)
     data = json.dumps({"options": _serialized_options(payload)}).encode("utf-8")
     req = urllib.request.Request(
         url,
@@ -599,6 +650,9 @@ def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
     precommit_mode = str(payload.get("precommit_mode", "enabled")).strip()
     if precommit_mode not in ("enabled", "warn", "disabled"):
         return False, "precommit_mode must be enabled, warn, or disabled"
+    log_level = str(payload.get("log_level", "INFO")).strip()
+    if log_level.upper() not in ("DEBUG", "INFO", "WARN", "ERROR"):
+        return False, "log_level must be DEBUG, INFO, WARN, or ERROR"
 
     for key in (
         "include_addon_configs",
@@ -1343,7 +1397,9 @@ def trigger_manual_sync():
 def get_options():
     if not _require_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
-    return jsonify(_mask_token(_merge_options()))
+    options = _mask_token(_merge_options())
+    options["ha_time_zone"] = _supervisor_time_zone()
+    return jsonify(options)
 
 
 def _apply_token_update(raw: object, current: Any) -> str:
@@ -1398,6 +1454,7 @@ def set_options():
         "clean_preserve_paths": list(_pattern_list(payload.get("clean_preserve_paths"))),
         "scheduler_timezone": str(payload.get("scheduler_timezone", "")).strip(),
         "precommit_mode": str(payload.get("precommit_mode", "enabled")).strip() or "enabled",
+        "log_level": str(payload.get("log_level", "INFO")).strip().upper() or "INFO",
     }
 
     valid, message = _validate_payload(candidate)
@@ -1406,6 +1463,7 @@ def set_options():
 
     _persist_options(candidate)
     _sync_options_to_supervisor(candidate)
+    _apply_log_level(candidate.get("log_level"))
     _append_log("Settings updated via web UI")
     _scheduler.restart()
     return jsonify({"ok": True, "options": _mask_token(_merge_options())})
@@ -2112,4 +2170,5 @@ def trigger_clean_repo():
 
 if __name__ == "__main__":
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    _apply_log_level()
     app.run(host="0.0.0.0", port=APP_PORT, debug=False)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import tempfile
@@ -1142,6 +1143,96 @@ class AuthBehaviorTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("precommit_mode", response.get_json()["error"])
+
+    def test_set_options_accepts_and_persists_log_level(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "log_level": "INFO",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "log_level": "warn",
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(server._merge_options()["log_level"], "WARN")
+
+    def test_set_options_defaults_log_level_to_info(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(server._merge_options()["log_level"], "INFO")
+
+    def test_set_options_rejects_invalid_log_level(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "log_level": "INFO",
+            }
+        )
+        response = self.client.post(
+            "/api/options",
+            json={"log_level": "verbose"},
+            headers={"Authorization": "Bearer token"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("log_level", response.get_json()["error"])
+
+    def test_get_options_includes_ha_time_zone_and_masks_token(self) -> None:
+        self._write_options(
+            {
+                "github_repository": "owner/repo",
+                "github_branch": "main",
+                "github_token": "token",
+                "log_level": "INFO",
+            }
+        )
+        response = self.client.get("/api/options", headers={"Authorization": "Bearer token"})
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["github_token"], "********")
+        self.assertEqual(data["log_level"], "INFO")
+        self.assertIn("ha_time_zone", data)
+        self.assertIsInstance(data["ha_time_zone"], str)
+
+    def test_apply_log_level_configures_root_logger(self) -> None:
+        root = logging.getLogger()
+        original = root.level
+        try:
+            server._apply_log_level("DEBUG")
+            self.assertEqual(root.level, logging.DEBUG)
+            server._apply_log_level("WARN")
+            self.assertEqual(root.level, logging.WARN)
+            server._apply_log_level("ERROR")
+            self.assertEqual(root.level, logging.ERROR)
+        finally:
+            server._apply_log_level("INFO")
+            self.assertEqual(root.level, logging.INFO or original)
 
 
 if __name__ == "__main__":
