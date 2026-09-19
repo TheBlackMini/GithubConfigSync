@@ -41,11 +41,11 @@ a **config sync tool, not a backup tool**.
 
 [badge-home-assistant]: https://img.shields.io/badge/Home%20Assistant-41BDF5?style=flat-square&logo=homeassistant&logoColor=white
 [home-assistant]: https://www.home-assistant.io/
-[badge-hassfest]: https://img.shields.io/github/actions/workflow/status/MJP-76/GithubConfigSync/hassfest.yml?branch=main&label=Hassfest
-[workflow-hassfest]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/hassfest.yml
-[badge-ci]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/ci.yml/badge.svg
-[workflow-ci]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/ci.yml
-[badge-release]: https://img.shields.io/github/v/release/MJP-76/GithubConfigSync?style=flat&label=Release
-[releases]: https://github.com/MJP-76/GithubConfigSync/releases
+[badge-hassfest]: https://img.shields.io/github/actions/workflow/status/TheBlackMini/GithubConfigSync/hassfest.yml?branch=main&label=Hassfest
+[workflow-hassfest]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/hassfest.yml
+[badge-ci]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/ci.yml/badge.svg
+[workflow-ci]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/ci.yml
+[badge-release]: https://img.shields.io/github/v/release/TheBlackMini/GithubConfigSync?style=flat&label=Release
+[releases]: https://github.com/TheBlackMini/GithubConfigSync/releases
 [badge-built-with-ai]: https://img.shields.io/badge/Built%20with-AI-black?logo=openai&logoColor=white
 [built-with-ai]: https://openai.com

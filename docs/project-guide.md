@@ -1,6 +1,6 @@
 # Project guide
 
-A summary of [PROJECT.md](https://github.com/MJP-76/GithubConfigSync/blob/main/PROJECT.md) — the single source of truth for
+A summary of [PROJECT.md](https://github.com/TheBlackMini/GithubConfigSync/blob/main/PROJECT.md) — the single source of truth for
 status, architecture, security, and workflow.
 
 ## Current status
@@ -12,7 +12,7 @@ status, architecture, security, and workflow.
 - Release tag: `v1.6.0`
 <!-- VERSION:END -->
 
-- **Repo:** `MJP-76/GithubConfigSync` — `main` = stable, `dev` = development
+- **Repo:** `TheBlackMini/GithubConfigSync` — `main` = stable, `dev` = development
 - **Add-on path:** `addons/github-config-sync/`
 - **Integration path:** `custom_components/github_config_sync/`
 - **App source:** `addons/github-config-sync/rootfs/app/`
@@ -50,5 +50,5 @@ status, architecture, security, and workflow.
 5. Commit and push to **dev**.
 6. When stable, push to **main** and create the GitHub release.
 
-The full [PROJECT.md](https://github.com/MJP-76/GithubConfigSync/blob/main/PROJECT.md) contains the milestone history and the
+The full [PROJECT.md](https://github.com/TheBlackMini/GithubConfigSync/blob/main/PROJECT.md) contains the milestone history and the
 per-tag release checklist.

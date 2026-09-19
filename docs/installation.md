@@ -8,7 +8,7 @@
 ## Install
 
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories**.
-2. Add this repository URL: `https://github.com/MJP-76/GithubConfigSync`.
+2. Add this repository URL: `https://github.com/TheBlackMini/GithubConfigSync`.
 3. Install **Github Config Sync** and start it.
 4. Open the app web UI (ingress), configure repository settings, and complete
    GitHub Device Flow login.

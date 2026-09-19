@@ -11,6 +11,8 @@
 
 Home Assistant **add-on** for syncing your config folder to GitHub. This is a config sync tool, not a backup tool.
 
+A fork of the original [Github Config Sync](https://github.com/MJP-76/GithubConfigSync) by [MJP-76](https://github.com/MJP-76), with personal modifications by [TheBlackMini](https://github.com/TheBlackMini).
+
 **Private repositories are strongly recommended.** Use caution with public repos and any two-way sync tools that also write to your Home Assistant config tree — they can cause local config loss or unexpected deletions.
 
 <!-- VERSION:START -->
@@ -19,14 +21,6 @@ Home Assistant **add-on** for syncing your config folder to GitHub. This is a co
 - Channel: `stable`
 - Release tag: `v1.6.0`
 <!-- VERSION:END -->
-
-## Support me
-
-If you find this project useful, and would like to help support its continued development, you can do so here:
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://www.buymeacoffee.com/mjp76)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=ffffff)](https://ko-fi.com/mjp76)
-[![Octopus Energy — you get £50, I get £50](https://img.shields.io/badge/Octopus%20Energy-%E2%80%94%20you%20get%20%C2%A350%2C%20I%20get%20%C2%A350-14294A?style=for-the-badge&logo=octopus-energy&logoColor=ffffff)](https://share.octopus.energy/iron-moose-196)
 
 ## Features
 
@@ -48,7 +42,7 @@ If you find this project useful, and would like to help support its continued de
 > **This is a Home Assistant add-on, not a HACS integration.** Install it from the Add-on Store.
 
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store → Repositories**.
-2. Add this repository URL: `https://github.com/MJP-76/GithubConfigSync`.
+2. Add this repository URL: `https://github.com/TheBlackMini/GithubConfigSync`.
 3. Install **Github Config Sync** and start it.
 4. Open the app web UI (ingress), configure repository settings, and complete GitHub Device Flow login.
 
@@ -99,7 +93,7 @@ Before any file is pushed, the add-on checks copies of the about-to-be-uploaded 
 To use the dev branch, add the dev repository URL in **Settings → Add-ons → Add-on Store → Repositories**:
 
 ```
-https://github.com/MJP-76/GithubConfigSync-dev
+https://github.com/TheBlackMini/GithubConfigSync-dev
 ```
 
 Development happens on the `dev` repo. When ready, changes are pushed to both repos.
@@ -110,18 +104,18 @@ Development happens on the `dev` repo. When ready, changes are pushed to both re
 - **[Changelog](CHANGELOG.md)** — release history.
 
 [badge-docs]: https://img.shields.io/badge/Documentation-41BDF5?style=flat-square&logo=bookstack&logoColor=white
-[docs]: https://MJP-76.github.io/GithubConfigSync/
+[docs]: https://TheBlackMini.github.io/GithubConfigSync/
 [badge-home-assistant]: https://img.shields.io/badge/Home%20Assistant-41BDF5?style=flat-square&logo=homeassistant&logoColor=white
 [home-assistant]: https://www.home-assistant.io/
 [badge-hacs]: https://img.shields.io/badge/HACS-Custom-41BDF5.svg
 [hacs]: https://github.com/hacs/integration
 [badge-hacs-validation]: https://img.shields.io/badge/HACS%20Validation-passing-brightgreen
-[workflow-hacs-validation]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/validate.yml
-[badge-hassfest]: https://img.shields.io/github/actions/workflow/status/MJP-76/GithubConfigSync/hassfest.yml?branch=main&label=Hassfest
-[workflow-hassfest]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/hassfest.yml
-[badge-ci]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/ci.yml/badge.svg
-[workflow-ci]: https://github.com/MJP-76/GithubConfigSync/actions/workflows/ci.yml
-[badge-release]: https://img.shields.io/github/v/release/MJP-76/GithubConfigSync?style=flat&label=Release
-[releases]: https://github.com/MJP-76/GithubConfigSync/releases
+[workflow-hacs-validation]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/validate.yml
+[badge-hassfest]: https://img.shields.io/github/actions/workflow/status/TheBlackMini/GithubConfigSync/hassfest.yml?branch=main&label=Hassfest
+[workflow-hassfest]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/hassfest.yml
+[badge-ci]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/ci.yml/badge.svg
+[workflow-ci]: https://github.com/TheBlackMini/GithubConfigSync/actions/workflows/ci.yml
+[badge-release]: https://img.shields.io/github/v/release/TheBlackMini/GithubConfigSync?style=flat&label=Release
+[releases]: https://github.com/TheBlackMini/GithubConfigSync/releases
 [badge-built-with-ai]: https://img.shields.io/badge/Built%20with-AI-black?logo=openai&logoColor=white
 [built-with-ai]: https://openai.com

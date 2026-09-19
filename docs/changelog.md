@@ -1,9 +1,9 @@
 # Changelog
 
 The full 71-release history lives in
-[CHANGELOG.md](https://github.com/MJP-76/GithubConfigSync/blob/main/CHANGELOG.md)
+[CHANGELOG.md](https://github.com/TheBlackMini/GithubConfigSync/blob/main/CHANGELOG.md)
 (and on
-[GitHub Releases](https://github.com/MJP-76/GithubConfigSync/releases)).
+[GitHub Releases](https://github.com/TheBlackMini/GithubConfigSync/releases)).
 The last 5 releases are kept at the top, per the project's changelog rules.
 
 ## 1.6.0
