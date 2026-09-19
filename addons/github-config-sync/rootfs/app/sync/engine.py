@@ -8,6 +8,7 @@ from .errors import SyncError
 from .github_client import GitHubClient
 from .hashing import build_hash_index, diff_hash_indexes, path_matches_patterns, scan_sensitive_files
 from .models import SyncConfig, SyncPlan, SyncResult
+from .precommit import format_report, run_precommit_gate
 
 
 class SyncEngine:
@@ -39,12 +40,16 @@ class SyncEngine:
         self._sensitive_files: list[str] = []
         self._cancel_requested: Callable[[], bool] = lambda: False
         self._progress_callback: Callable[[dict[str, object]], None] = lambda _payload: None
+        self._log_callback: Callable[[str], None] = lambda _message: None
 
     def set_cancel_checker(self, cancel_requested: Callable[[], bool]) -> None:
         self._cancel_requested = cancel_requested
 
     def set_progress_callback(self, progress_callback: Callable[[dict[str, object]], None]) -> None:
         self._progress_callback = progress_callback
+
+    def set_log_callback(self, log_callback: Callable[[str], None]) -> None:
+        self._log_callback = log_callback
 
     def probe_repository(self) -> tuple[bool, str]:
         return self._github.probe_repository()
@@ -100,6 +105,9 @@ class SyncEngine:
                     f"and delete {len(plan.removed)} files."
                 ),
             )
+
+        if upsert_paths:
+            self._run_precommit_gate(upsert_paths)
 
         synced_count = 0
         deleted_count = 0
@@ -474,6 +482,35 @@ class SyncEngine:
                     continue
                 index[key] = digest
         return index
+
+    def _run_precommit_gate(self, upsert_paths: list[str]) -> None:
+        mode = str(getattr(self._config, "precommit_mode", "enabled")).strip().lower()
+        if mode == "disabled":
+            return
+        files: list[tuple[str, Path]] = []
+        for relative in upsert_paths:
+            local_path = self._local_path_for(relative)
+            if local_path.is_file():
+                files.append((relative, local_path))
+        if not files:
+            return
+        result = run_precommit_gate(
+            files=files,
+            config_root=self._config_root,
+            mode=mode,
+            log_callback=self._log_callback,
+        )
+        if mode == "enabled" and not result.passed:
+            self._log_callback("pre-commit gate blocked the upload")
+            raise SyncError(
+                "Pre-commit gate blocked the upload before any files were pushed.\n"
+                f"{format_report(result)}\n"
+                "Fix the reported files and retry, or change 'Pre-commit mode' to 'warn only' or 'disabled'."
+            )
+        if not result.passed and self._log_callback is not None:
+            self._log_callback(
+                "pre-commit gate: hooks found violations (warn-only mode)\n" + format_report(result)
+            )
 
     def _local_path_for(self, relative: str) -> Path:
         if relative.startswith("media/"):

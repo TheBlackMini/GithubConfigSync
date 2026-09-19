@@ -11,7 +11,9 @@ if str(APP_ROOT) not in sys.path:
     sys.path.insert(0, str(APP_ROOT))
 
 from sync.engine import SyncEngine
+from sync.errors import SyncError
 from sync.models import SyncConfig, SyncPlan
+from sync.precommit import PrecommitResult
 
 
 class SyncEngineTests(unittest.TestCase):
@@ -327,6 +329,276 @@ class SyncEngineTests(unittest.TestCase):
             engine.restore_repo_skeleton()
 
         self.assertTrue(fake_client.put_content.called)
+
+    def test_whitelist_plan_only_includes_matching_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "configuration.yaml").write_text("a: 1", encoding="utf-8")
+            (root / "notes.md").write_text("notes", encoding="utf-8")
+            (root / "media").mkdir()
+            (root / "media" / "clip.mp4").write_bytes(b"png")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=True,
+                sync_mode="whitelist",
+                sync_include_patterns=("*.yaml",),
+            )
+
+            engine = SyncEngine(config, previous_hash_index={})
+            plan, _ = engine.plan()
+
+            self.assertEqual(plan.added, ["configuration.yaml"])
+            self.assertNotIn("notes.md", plan.added)
+            self.assertNotIn("media/clip.mp4", plan.added)
+
+    def test_exclude_patterns_filter_in_blacklist_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "configuration.yaml").write_text("a: 1", encoding="utf-8")
+            (root / "debug.log").write_text("log", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=True,
+                sync_mode="blacklist",
+                sync_exclude_patterns=("*.log",),
+            )
+
+            engine = SyncEngine(config, previous_hash_index={})
+            plan, _ = engine.plan()
+
+            self.assertEqual(plan.added, ["configuration.yaml"])
+            self.assertNotIn("debug.log", plan.added)
+
+    def test_files_falling_off_whitelist_are_not_deleted(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "configuration.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=True,
+                sync_mode="whitelist",
+                sync_include_patterns=("*.yaml",),
+            )
+
+            previous = {"configuration.yaml": "old-hash", "notes.md": "old-md"}
+            engine = SyncEngine(config, previous_hash_index=previous)
+            plan, _ = engine.plan()
+
+            self.assertEqual(plan.added, [])
+            self.assertEqual(plan.changed, ["configuration.yaml"])
+            self.assertEqual(plan.removed, [])
+
+    def test_empty_whitelist_syncs_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "configuration.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=True,
+                sync_mode="whitelist",
+                sync_include_patterns=(),
+            )
+
+            engine = SyncEngine(config, previous_hash_index={})
+            plan, _ = engine.plan()
+
+            self.assertEqual(plan.added, [])
+            self.assertEqual(plan.removed, [])
+
+    def test_clean_scope_preserves_excluded_and_out_of_scope_paths(self) -> None:
+        config = SyncConfig(
+            repository="owner/repo",
+            branch="main",
+            token="token",
+            config_root=".",
+            addon_config_root="/addon_configs",
+            dry_run=False,
+            include_addon_configs=True,
+            sync_mode="whitelist",
+            sync_include_patterns=("*.yaml",),
+            clean_preserve_paths=("docs",),
+        )
+        fake_client = MagicMock()
+        fake_client.get_branch_head_sha.return_value = "headsha"
+        fake_client.get_commit_tree_sha.return_value = "basetree"
+        fake_client.list_directory_contents.side_effect = [
+            [
+                {"type": "file", "path": "root.yaml", "sha": "rootsha"},
+                {"type": "file", "path": "notes.md", "sha": "notesha"},
+                {"type": "dir", "path": "docs", "name": "docs"},
+                {"type": "dir", "path": "nested", "name": "nested"},
+            ],
+            [],
+            [],
+        ]
+        fake_client.create_git_tree.return_value = {"sha": "treesha"}
+        fake_client.create_git_commit.return_value = {"sha": "commitsha"}
+
+        with patch("sync.engine.GitHubClient", return_value=fake_client):
+            engine = SyncEngine(config, previous_hash_index={})
+            engine.clean_remote_tree()
+
+        deletions = fake_client.create_git_tree.call_args.kwargs["tree"]
+        self.assertEqual([item["path"] for item in deletions], ["root.yaml"])
+        self.assertNotIn("notes.md", [item["path"] for item in deletions])
+        self.assertNotIn("docs", [item["path"] for item in deletions])
+
+    def test_precommit_gate_blocks_live_run_in_enabled_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=False,
+                include_addon_configs=True,
+                precommit_mode="enabled",
+            )
+            plan = SyncPlan(added=["a.yaml"], changed=[], removed=[], total_files=1)
+            failing = PrecommitResult(
+                passed=False,
+                exit_code=1,
+                output="",
+                failed_hooks=("check-yaml",),
+                failed_files=("a.yaml: failed to decode",),
+            )
+
+            fake_client = MagicMock()
+            with patch("sync.engine.GitHubClient", return_value=fake_client), patch(
+                "sync.engine.run_precommit_gate", return_value=failing
+            ):
+                engine = SyncEngine(config, previous_hash_index={})
+                with self.assertRaises(SyncError) as ctx:
+                    engine.run(plan)
+
+        self.assertIn("Pre-commit gate blocked", str(ctx.exception))
+        self.assertIn("check-yaml", str(ctx.exception))
+        fake_client.put_content.assert_not_called()
+        fake_client.delete_content.assert_not_called()
+
+    def test_precommit_gate_warn_mode_logs_and_continues(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=False,
+                include_addon_configs=True,
+                precommit_mode="warn",
+            )
+            plan = SyncPlan(added=["a.yaml"], changed=[], removed=[], total_files=1)
+            logs: list[str] = []
+            failing = PrecommitResult(
+                passed=False,
+                exit_code=1,
+                output="",
+                failed_hooks=("check-yaml",),
+                failed_files=("a.yaml: failed to decode",),
+            )
+
+            fake_client = MagicMock()
+            fake_client.get_content.return_value = None
+            with patch("sync.engine.GitHubClient", return_value=fake_client), patch(
+                "sync.engine.run_precommit_gate", return_value=failing
+            ):
+                engine = SyncEngine(config, previous_hash_index={})
+                engine.set_log_callback(logs.append)
+                result = engine.run(plan)
+
+        self.assertEqual(result.synced_count, 1)
+        self.assertEqual(fake_client.put_content.call_count, 1)
+        self.assertTrue(any("check-yaml" in line for line in logs))
+
+    def test_precommit_gate_disabled_skips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=False,
+                include_addon_configs=True,
+                precommit_mode="disabled",
+            )
+            plan = SyncPlan(added=["a.yaml"], changed=[], removed=[], total_files=1)
+
+            fake_client = MagicMock()
+            fake_client.get_content.return_value = None
+            with patch("sync.engine.GitHubClient", return_value=fake_client), patch(
+                "sync.engine.run_precommit_gate"
+            ) as gate:
+                engine = SyncEngine(config, previous_hash_index={})
+                engine.run(plan)
+
+        gate.assert_not_called()
+        self.assertEqual(fake_client.put_content.call_count, 1)
+
+    def test_precommit_gate_runs_before_any_upload_using_local_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.yaml").write_text("a: 1", encoding="utf-8")
+
+            config = SyncConfig(
+                repository="owner/repo",
+                branch="main",
+                token="token",
+                config_root=str(root),
+                addon_config_root="/addon_configs",
+                dry_run=False,
+                include_addon_configs=True,
+                precommit_mode="enabled",
+            )
+            plan = SyncPlan(added=["a.yaml"], changed=[], removed=[], total_files=1)
+            passed = PrecommitResult(passed=True, exit_code=0, output="")
+
+            fake_client = MagicMock()
+            fake_client.get_content.return_value = None
+            with patch("sync.engine.GitHubClient", return_value=fake_client), patch(
+                "sync.engine.run_precommit_gate", return_value=passed
+            ) as gate:
+                engine = SyncEngine(config, previous_hash_index={})
+                result = engine.run(plan)
+
+        gate.assert_called_once()
+        files_arg = gate.call_args.kwargs["files"]
+        self.assertEqual(len(files_arg), 1)
+        relative, local_path = files_arg[0]
+        self.assertEqual(relative, "a.yaml")
+        self.assertEqual(local_path, root / "a.yaml")
+        self.assertEqual(result.synced_count, 1)
 
 
 if __name__ == "__main__":
