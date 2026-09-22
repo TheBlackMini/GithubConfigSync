@@ -195,7 +195,7 @@ def _redact_line(line: str) -> str:
 
 
 DEFAULT_OPTIONS: dict[str, Any] = {
-    "auth_method": "device_flow",
+    "auth_method": "github_app",
     "repo_mode": "existing",
     "existing_repo_confirmed_for": "",
     "github_repository": "",
@@ -642,7 +642,7 @@ def _validate_payload(payload: dict[str, Any]) -> tuple[bool, str | None]:
             except (TypeError, ValueError):
                 return False, "auto_sync_days must contain integers 1-7 (Mon-Sun)"
 
-    if str(payload.get("auth_method", "device_flow")) not in ("device_flow", "fine_grained_pat", "github_app"):
+    if str(payload.get("auth_method", "github_app")) not in ("device_flow", "fine_grained_pat", "github_app"):
         return False, "auth_method must be device_flow, fine_grained_pat, or github_app"
     sync_mode = str(payload.get("sync_mode", "whitelist")).strip()
     if sync_mode not in ("whitelist", "blacklist"):
@@ -1424,8 +1424,8 @@ def set_options():
         return jsonify({"ok": False, "error": "Invalid JSON body"}), 400
 
     candidate = {
-        "auth_method": str(payload.get("auth_method", _merge_options().get("auth_method", "device_flow"))).strip()
-        or "device_flow",
+        "auth_method": str(payload.get("auth_method", _merge_options().get("auth_method", "github_app"))).strip()
+        or "github_app",
         "repo_mode": str(payload.get("repo_mode", _merge_options().get("repo_mode", "existing"))).strip()
         or "existing",
         "existing_repo_confirmed_for": str(payload.get("existing_repo_confirmed_for", "")).strip(),
@@ -1595,7 +1595,7 @@ def start_device_auth():
 
     options = _merge_options()
     auth_method = str(
-        (payload or {}).get("auth_method") or options.get("auth_method") or "device_flow"
+        (payload or {}).get("auth_method") or options.get("auth_method") or "github_app"
     ).strip()
     client_id = str((payload or {}).get("client_id") or options.get("github_client_id") or "").strip()
     if auth_method == "github_app":
@@ -1684,7 +1684,7 @@ def complete_device_auth():
     merged = _merge_options()
     merged["github_token"] = token
     merged["github_client_id"] = str(flow.get("client_id", "")).strip() or DEFAULT_OAUTH_CLIENT_ID
-    merged["auth_method"] = str(flow.get("auth_method") or merged.get("auth_method") or "device_flow")
+    merged["auth_method"] = str(flow.get("auth_method") or merged.get("auth_method") or "github_app")
     _persist_options(merged)
     _sync_options_to_supervisor(merged)
     _clear_device_flow()

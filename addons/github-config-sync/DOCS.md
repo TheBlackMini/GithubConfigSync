@@ -98,7 +98,7 @@ The full set of options, with the web-UI section where each is edited:
 | `github_repository` | Repository / connect | _empty_ | `TheBlackMini/home-assistant-config` |
 | `github_branch` | Repository | `main` | `main` |
 | `github_token` | Connect | _empty_ | set by Device Flow |
-| `github_client_id` | Connect | default OAuth app | `Ov23liAbCdEfGhIjKlM` (your GitHub App's Client ID for `github_app`) |
+| `github_client_id` | Connect | default OAuth app | your GitHub App's Client ID for `github_app` |
 | `scheduler_timezone` | 4 | _empty_ (server local) | `Europe/Berlin` |
 | `sync_include_patterns` | 5 | `*.yaml`, `*.json`, `themes`, … | `packages\n*.yaml` |
 | `sync_exclude_patterns` | 5 | _empty_ | `home-assistant.log\n**/*.tmp` |

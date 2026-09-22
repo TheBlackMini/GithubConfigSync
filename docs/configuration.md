@@ -24,7 +24,7 @@ The web UI opens as a **setup wizard** (Connect GitHub → Repository → What t
 | `github_repository` | _empty_ | `TheBlackMini/home-assistant-config` | Target repository (`owner/repo`), set by the picker. |
 | `github_branch` | `main` | `main` | Branch to push to. |
 | `github_token` | _empty_ | set by Device Flow | Encrypted at rest; masked in the UI. |
-| `github_client_id` | default OAuth app | `Ov23liAbCdEfGhIjKlM` | OAuth app client ID for Device Flow. Also the required **Client ID of your own GitHub App** when `auth_method` is `github_app` (no client secret needed). |
+| `github_client_id` | default OAuth app | — | OAuth app client ID for Device Flow. Required **Client ID of your own GitHub App** when `auth_method` is `github_app` (no client secret needed). |
 | `scheduler_timezone` | server local | `Europe/Berlin` | IANA timezone for scheduled sync. |
 | `sync_include_patterns` | `*.yaml`, `*.json`, … | `packages\n*.yaml` | Allow-list patterns (`whitelist` mode). |
 | `sync_exclude_patterns` | _empty_ | `home-assistant.log` | Never-sync patterns. |

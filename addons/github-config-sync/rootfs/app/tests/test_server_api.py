@@ -126,7 +126,7 @@ class ServerApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(body["include_addon_configs"])
 
-    def test_options_round_trip_auth_method_defaults_to_device_flow(self) -> None:
+    def test_options_round_trip_auth_method_defaults_to_github_app(self) -> None:
         self._write_options(
             {
                 "github_repository": "owner/repo",
@@ -140,7 +140,7 @@ class ServerApiTests(unittest.TestCase):
         body = response.get_json()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(body["auth_method"], "device_flow")
+        self.assertEqual(body["auth_method"], "github_app")
 
     def test_start_device_flow_returns_verification_data(self) -> None:
         self._write_options({"github_client_id": "client-id", "github_branch": "main"})
