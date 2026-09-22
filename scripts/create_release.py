@@ -12,6 +12,8 @@ ADDON_CONFIG_PATH = REPO_ROOT / "addons/github-config-sync/config.yaml"
 CHANGELOG_PATH = REPO_ROOT / "CHANGELOG.md"
 
 VERSION_PATTERN = re.compile(r'^version:\s*["\']?([^"\']+)["\']?\s*$', re.MULTILINE)
+SIMPLE_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
+PRE_RELEASE_PATTERN = re.compile(r"-\d+[0-9A-Za-z.\-]*$")
 
 
 def read_version() -> str:
@@ -21,9 +23,13 @@ def read_version() -> str:
     if match is None:
         raise SystemExit(f"Could not read version from {ADDON_CONFIG_PATH}")
     version = match.group(1)
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?", version):
         raise SystemExit(f"Unexpected version format in config.yaml: {version}")
     return version
+
+
+def is_prerelease(version: str) -> bool:
+    return PRE_RELEASE_PATTERN.search(version) is not None
 
 
 def read_changelog_section(changelog: Path, version: str) -> str:
@@ -49,7 +55,7 @@ def current_branch() -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Publish the current version's changelog section as a GitHub release (vX.Y.Z).",
+        description="Publish the current version's changelog section as a GitHub release (vX.Y.Z); pre-release versions are marked --prerelease.",
     )
     parser.add_argument(
         "--version",
@@ -68,32 +74,34 @@ def main() -> int:
 
     version = args.version or read_version()
     tag = f"v{version}"
+    prerelease = is_prerelease(version)
     branch = args.branch or current_branch()
     body = read_changelog_section(CHANGELOG_PATH, version)
 
     if args.check:
-        print(f"tag:      {tag}")
-        print(f"branch:   {branch}")
+        print(f"tag:        {tag}")
+        print(f"branch:     {branch}")
+        print(f"prerelease: {prerelease}")
         print("notes:")
         print(body)
         return 0
 
     try:
-        subprocess.run(
-            [
-                "gh",
-                "release",
-                "create",
-                tag,
-                "--title",
-                tag,
-                "--target",
-                branch,
-                "--notes",
-                body,
-            ],
-            check=True,
-        )
+        release_args = [
+            "gh",
+            "release",
+            "create",
+            tag,
+            "--title",
+            tag,
+            "--target",
+            branch,
+            "--notes",
+            body,
+        ]
+        if prerelease:
+            release_args.append("--prerelease")
+        subprocess.run(release_args, check=True)
     except FileNotFoundError as err:
         raise SystemExit("The GitHub CLI (gh) is required to publish releases") from err
     except subprocess.CalledProcessError as err:

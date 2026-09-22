@@ -21,10 +21,11 @@ There is **no** `pyproject.toml`, uv, ruff, mypy, or pytest config in this repo 
 ## Versioning
 
 - `addons/github-config-sync/config.yaml` is the single source of truth for the version; `server.py` reads it at startup. Never hardcode a version as a literal string in `server.py` — `scripts/sync_versions.py` fails on `APP_VERSION = "..."`.
-- Bump flow: update `config.yaml`, then run `scripts/sync_versions.py`, which syncs `manifest.json`, `hacs.json`, the `<!-- VERSION:START -->` blocks in `README.md`, the add-on README, and `PROJECT.md`, and promotes the top `## Unreleased` changelog section into `## X.Y.Z` in `CHANGELOG.md`, `addons/github-config-sync/CHANGELOG.md`, and `rootfs/app/CHANGELOG.md` (leaving a fresh empty `## Unreleased` at the top). `--channel dev` bumps the patch for the dev track; `--check` reports drift without writing.
+- Bump flow: update `config.yaml`, then run `scripts/sync_versions.py`, which syncs `manifest.json`, `hacs.json`, the `<!-- VERSION:START -->` blocks in `README.md`, the add-on README, `PROJECT.md`, and `docs/project-guide.md`, and promotes the top `## Unreleased` changelog section into `## X.Y.Z` in `CHANGELOG.md`, `addons/github-config-sync/CHANGELOG.md`, and `rootfs/app/CHANGELOG.md` (leaving a fresh empty `## Unreleased` at the top). `--channel dev` bumps the patch for the dev track; `--check` reports drift without writing.
+- Pre-release versions use a suffix in `config.yaml` (`1.8.0-beta-1`); `sync_versions.py` and `create_release.py` accept and propagate them, and `create_release.py` marks such GitHub releases as pre-releases so HA/HACS can opt in via their beta/pre-release toggles.
 - Changelog notes for unreleased work go under the top `## Unreleased` heading in all three changelogs; keep them identical.
 - Releases publish via `scripts/create_release.py` (creates the GitHub release `vX.Y.Z` whose body is that version's changelog section — that body is what the Home Assistant update page / HACS shows).
-- Branches: `main` = stable; development happens on `dev`. Release = merge to `main` + GitHub tag `vX.Y.Z` + run `scripts/create_release.py`.
+- Trunk-based: `main` is the only branch; all development and releases happen directly on `main`. A release = tag `vX.Y.Z` on `main` + `scripts/create_release.py`.
 
 ## Testing quirks
 

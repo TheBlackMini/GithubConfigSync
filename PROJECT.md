@@ -13,7 +13,7 @@ Single source of truth for project status, architecture, security, and workflow.
 - Release tag: `v1.7.1`
 <!-- VERSION:END -->
 - **Last updated:** 2026-08-07
-- **Repo:** `TheBlackMini/GithubConfigSync` (single repo, `main` = stable, `dev` = development)
+- **Repo:** `TheBlackMini/GithubConfigSync` — trunk-based: `main` is the only branch (development and releases happen directly on `main`)
 - **Add-on path:** `addons/github-config-sync/`
 - **Integration path:** `custom_components/github_config_sync/`
 - **App source:** `addons/github-config-sync/rootfs/app/`
@@ -72,7 +72,7 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 - Token/client ID should not be front-and-center for normal users.
 - Repository selection is guided (picker/create) instead of manual-only typing.
 - The Add-on Store is the supported distribution path; the legacy HACS integration is kept only to redirect installs to the add-on.
-- Stable / dev version lines are explicit so the repo ships the right track from the right repository.
+- Single-version line: the repo ships one version per release; in-progress notes accumulate under `## Unreleased` and roll into the next release on bump. Pre-releases (`X.Y.Z-beta-N`) are cut on `main` and tagged as GitHub pre-releases so HA/HACS only surface them to users who opt into beta tracks.
 
 ---
 
@@ -94,11 +94,10 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 
 ## Release Workflow
 
-1. Update code; add the changes as notes under `## Unreleased` in the three changelogs.
-2. Bump version in `config.yaml` (single source of truth — `server.py` auto-reads it at startup).
+1. Trunk-based: commit work directly to `main` (no feature branches); add the changes as notes under `## Unreleased` in the three changelogs.
+2. Bump version in `config.yaml` (single source of truth — `server.py` auto-reads it at startup). Pre-releases use a suffix, e.g. `1.8.0-beta-1`.
 3. Run `python3 scripts/sync_versions.py --integration X.Y.Z --channel stable` — bumps `manifest.json` and `hacs.json`, syncs the `VERSION` blocks, and promotes the top `## Unreleased` changelog section into `## X.Y.Z` (a fresh empty `## Unreleased` remains for the next release).
-4. Commit and push to dev.
-5. When stable, push to main, tag `vX.Y.Z`, and run `python3 scripts/create_release.py` to publish a GitHub release whose body is that version's changelog section — HA then shows only the delta for the update.
+4. Commit and push to `main`, tag `vX.Y.Z`, and run `python3 scripts/create_release.py` to publish a GitHub release whose body is that version's changelog section — HA then shows only the delta for the update. Pre-release versions are automatically marked `--prerelease` so beta/test tracks can opt in.
 
 ---
 
@@ -248,7 +247,6 @@ Home Assistant add-on with ingress web UI. Runs a Flask server that handles:
 - [ ] `--check` reports "version sync check passed"
 - [ ] Validation/CI green
 - [ ] Docs updated
-- [ ] Committed and pushed to dev
-- [ ] Merged to main + tag `vX.Y.Z`
-- [ ] `python3 scripts/create_release.py` run to publish the changelog section as the GitHub release body
+- [ ] Committed and pushed to `main` + tag `vX.Y.Z`
+- [ ] `python3 scripts/create_release.py` run to publish the changelog section as the GitHub release body (pre-releases auto-marked `--prerelease`)
 - [ ] This file updated
