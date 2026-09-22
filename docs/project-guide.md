@@ -6,13 +6,13 @@ status, architecture, security, and workflow.
 ## Current status
 
 <!-- VERSION:START -->
-- Integration version: `1.6.2`
-- Add-on version: `1.6.2`
+- Integration version: `1.7.1`
+- Add-on version: `1.7.1`
 - Channel: `stable`
-- Release tag: `v1.6.2`
+- Release tag: `v1.7.1`
 <!-- VERSION:END -->
 
-- **Repo:** `TheBlackMini/GithubConfigSync` — `main` = stable, `dev` = development
+- **Repo:** `TheBlackMini/GithubConfigSync` — trunk-based: `main` is the only branch (development and releases happen directly on `main`)
 - **Add-on path:** `addons/github-config-sync/`
 - **Integration path:** `custom_components/github_config_sync/`
 - **App source:** `addons/github-config-sync/rootfs/app/`
@@ -43,18 +43,19 @@ status, architecture, security, and workflow.
 
 ## Release workflow
 
-1. Update code.
+1. Trunk-based: commit work directly to `main` (no feature branches); add the changes as notes under `## Unreleased` in the three changelogs.
 2. Bump version in `config.yaml` (single source of truth).
 3. Run `python3 scripts/sync_versions.py --integration X.Y.Z --channel stable` — bumps `manifest.json`,
-   `hacs.json`, the `VERSION` blocks in the READMEs and `PROJECT.md`, and promotes the top
+   `hacs.json`, the `VERSION` blocks in the READMEs and `PROJECT.md`/`project-guide.md`, and promotes the top
    `## Unreleased` changelog section into `## X.Y.Z` across the repo-root, add-on, and app changelogs.
 4. Add any unreleased notes under the fresh `## Unreleased` heading before bumping, so each release
    notes section only contains that release's changes.
-5. Commit and push to **dev**.
-6. When stable, push to **main** and run
+5. Commit, push to `main`, tag `vX.Y.Z`, and run
    `python3 scripts/create_release.py` — it publishes a GitHub release whose body is the version's
    changelog section, which is exactly what Home Assistant's update page shows on top of the
-   changelog (the differences between the user's version and the update).
+   changelog (the differences between the user's version and the update). Pre-release versions
+   (e.g. `1.8.0-beta-1`) are automatically marked `--prerelease` so HA/HACS only surface them
+   to users who opt into beta/pre-release tracks.
 
 The full [PROJECT.md](https://github.com/TheBlackMini/GithubConfigSync/blob/main/PROJECT.md) contains the milestone history and the
 per-tag release checklist.

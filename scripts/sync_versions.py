@@ -16,6 +16,7 @@ DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "addons/github-config-sync/README.md",
     REPO_ROOT / "PROJECT.md",
+    REPO_ROOT / "docs/project-guide.md",
 ]
 CHANGELOG_PATHS = [
     REPO_ROOT / "CHANGELOG.md",
@@ -29,15 +30,19 @@ VERSION_BLOCK_PATTERN = re.compile(
 )
 CHANGELOG_H1_PATTERN = re.compile(r"^#[^\n]*\n")
 UNRELEASED_PATTERN = re.compile(r"(?m)^## Unreleased[ \t]*\n")
+VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?")
 
 
 def _assert_simple_version(value: str, flag_name: str) -> None:
-    if not re.fullmatch(r"\d+\.\d+\.\d+", value):
-        raise ValueError(f"{flag_name} must be in x.y.z format (no suffix): {value}")
+    if not VERSION_PATTERN.fullmatch(value):
+        raise ValueError(
+            f"{flag_name} must be in x.y.z or x.y.z-pre format (optional suffix): {value}"
+        )
 
 
 def _bump_patch(version: str) -> str:
-    major, minor, patch = (int(part) for part in version.split("."))
+    base = version.partition("-")[0]
+    major, minor, patch = (int(part) for part in base.split("."))
     return f"{major}.{minor}.{patch + 1}"
 
 

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.7.1
+
+- **Fix**: Status polling is now adaptive (refresh every 30s while idle, every 2s only during an active sync) instead of hard-polling every 2s — copy/paste in the UI is no longer interrupted and error messages no longer get wiped seconds after they appear.
+- **Fix**: Errors from device-flow login and repository loading now stay on screen in a dismissible banner instead of vanishing.
+- **Fix**: The GitHub App is now the default auth method; the stale example Client ID was removed from the UI and docs.
+- **Fix**: "Save Connect settings" button is right-aligned.
+- **Fix**: Wizard sections are no longer collapsible and the "Installation and Usage" header was removed.
+- **Fix**: The Repository tab's "Load Repositories" now loads all repositories (public and private, including adopted ones) and refreshes the picker.
+
 ## 1.7.0
 
 - **Feature**: New least-privilege auth method — use your own GitHub App (device flow, Client ID only, no client secret): it asks only for Metadata (read-only) and Contents (read and write) on repositories you choose, and GitHub shows the app name you set instead of the maintainer's default.

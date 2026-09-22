@@ -463,8 +463,6 @@
       </div>
 
       <div class="card" id="configCard">
-        <h2 class="section-title">Installation and Usage</h2>
-
         <div class="view-switch">
           <div class="wizard-steps" id="wizardSteps">
             <span class="step-dot" data-step="1">Connect GitHub</span>
@@ -488,8 +486,10 @@
           <a href="#docsSection">8. Documentation</a>
         </div>
 
-        <details id="authSection" class="config-section" data-step="1" open>
-          <summary style="cursor: pointer; color: var(--muted)">1. Connect GitHub <span id="tokenBadge" class="pill status">Token missing</span></summary>
+        <div id="uiError" class="danger hidden" style="margin-bottom: 12px; cursor: pointer" title="Click to dismiss"></div>
+
+        <div id="authSection" class="config-section" data-step="1">
+          <h2 class="section-title">1. Connect GitHub <span id="tokenBadge" class="pill status">Token missing</span></h2>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <p class="subtle" style="margin-bottom: 10px">
               Choose how GitHub should authenticate this add-on.
@@ -518,9 +518,9 @@
             <div class="grid">
               <div class="field">
                 <label for="githubClientId">GitHub App / OAuth Client ID (Device Flow)</label>
-                <input id="githubClientId" placeholder="Ov23li..." />
+                <input id="githubClientId" placeholder="Your GitHub App client ID" />
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 2px 0 0">
-                  Required when using a GitHub App. Overrides the default OAuth app otherwise. Example: <code>Ov23liAbCdEfGhIjKlM</code>.
+                  Required when using a GitHub App. Overrides the default OAuth app otherwise.
                 </p>
               </div>
               <div class="field">
@@ -535,13 +535,13 @@
               <button id="startDeviceBtn" class="secondary" type="button">Start Device Login</button>
             </div>
             <p id="deviceFlowInfo" class="subtle" style="margin-top: 10px"></p>
-            <div class="section-actions">
+            <div class="section-actions" style="justify-content: flex-end">
               <button id="saveAuthBtn" class="secondary" type="button" data-keys="auth_method,github_client_id,github_token">Save Connect settings</button>
             </div>
           </div>
-        </details>
-        <details id="repoSection" class="config-section" data-step="2" style="margin-top: 12px" open>
-          <summary style="cursor: pointer; color: var(--muted)">2. Repository setup <span id="repoBadge" class="pill status">No repository</span></summary>
+        </div>
+        <div id="repoSection" class="config-section" data-step="2" style="margin-top: 12px">
+          <h2 class="section-title">2. Repository setup <span id="repoBadge" class="pill status">No repository</span></h2>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="field">
               <div class="row">
@@ -611,9 +611,9 @@
               <button id="saveRepoBtn" class="secondary" type="button" data-keys="repo_mode,existing_repo_confirmed_for,github_repository,github_branch">Save Repository settings</button>
             </div>
           </div>
-        </details>
-        <details id="scheduledSyncSection" class="config-section" data-step="4" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">4. Scheduled sync <span id="schedulerStatus"></span></summary>
+        </div>
+        <div id="scheduledSyncSection" class="config-section" data-step="4" style="margin-top: 12px">
+          <h2 class="section-title">4. Scheduled sync <span id="schedulerStatus"></span></h2>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="row" style="margin-bottom: 10px">
               <input id="autoSyncEnabled" type="checkbox" />
@@ -683,9 +683,9 @@
               <button id="saveScheduleBtn" class="secondary" type="button" data-keys="auto_sync_enabled,auto_sync_days,auto_sync_time,auto_sync_create_release,version_retention_count,scheduler_timezone">Save Schedule settings</button>
             </div>
           </div>
-        </details>
-        <details id="syncModeSection" class="config-section" data-step="3" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">3. Sync scope</summary>
+        </div>
+        <div id="syncModeSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <h2 class="section-title">3. Sync scope</h2>
           <div style="margin-top: 10px;">
             <label style="display: flex; align-items: center; gap: 8px;">
               <span>Sync mode:</span>
@@ -752,9 +752,9 @@
               <button id="saveScopeBtn" class="secondary" type="button" data-keys="sync_mode,precommit_mode,log_level,sync_include_patterns,sync_exclude_patterns,clean_preserve_paths">Save Sync scope settings</button>
             </div>
           </div>
-        </details>
-        <details id="mountPointsSection" class="config-section" data-step="3" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">4. Mount points to sync</summary>
+        </div>
+        <div id="mountPointsSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <h2 class="section-title">4. Mount points to sync</h2>
           <p class="subtle" style="margin-top: 10px">
             Synced mounts are imported wholesale into their own folder of the repository, outside the config allow-list.
           </p>
@@ -805,9 +805,9 @@
           <div class="section-actions">
             <button id="saveMountsBtn" class="secondary" type="button" data-keys="include_addon_configs,include_media,include_share,include_ssl,include_backups,include_www">Save Mount settings</button>
           </div>
-        </details>
-        <details id="gitignoreSection" class="config-section" data-step="3" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">5. Recommended .gitignore entries</summary>
+        </div>
+        <div id="gitignoreSection" class="config-section" data-step="3" style="margin-top: 12px">
+          <h2 class="section-title">5. Recommended .gitignore entries</h2>
           <p class="subtle" style="margin-bottom: 10px">
             These are safe defaults for Home Assistant. They are read from your local .gitignore and can be added with one click.
           </p>
@@ -825,9 +825,9 @@
             <button id="resetIgnoreBtn" class="secondary" style="margin-left: 8px;">Reset to Defaults</button>
             <button id="refreshIgnoreBtn" class="secondary">Refresh Ignore Suggestions</button>
           </div>
-        </details>
-        <details id="dryRunSection" class="config-section" data-step="4" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">7. Dry run mode (no push)</summary>
+        </div>
+        <div id="dryRunSection" class="config-section" data-step="4" style="margin-top: 12px">
+          <h2 class="section-title">7. Dry run mode (no push)</h2>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <div class="row">
               <input id="dryRun" type="checkbox" />
@@ -840,18 +840,18 @@
               <button id="saveDryRunBtn" class="secondary" type="button" data-keys="dry_run">Save Dry run setting</button>
             </div>
           </div>
-        </details>
-        <details id="reviewSection" class="config-section hidden" data-step="5">
-          <summary style="cursor: pointer; color: var(--muted)">Review &amp; finish</summary>
+        </div>
+        <div id="reviewSection" class="config-section hidden" data-step="5">
+          <h2 class="section-title">Review &amp; finish</h2>
           <div style="margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
             <p class="subtle" style="margin-bottom: 10px" id="reviewSummary">Checking your setup...</p>
             <div class="row">
               <button id="finishSetupBtn" class="secondary" type="button">Finish setup</button>
             </div>
           </div>
-        </details>
-        <details id="docsSection" class="config-section" data-step="docs" style="margin-top: 12px">
-          <summary style="cursor: pointer; color: var(--muted)">8. Documentation</summary>
+        </div>
+        <div id="docsSection" class="config-section" data-step="docs" style="margin-top: 12px">
+          <h2 class="section-title">8. Documentation</h2>
           <div style="margin-top: 10px">
             <p class="subtle" style="margin-bottom: 10px">
               Everything is configured from this page &mdash; nothing needs to be typed by hand. The sections above work
@@ -873,7 +873,7 @@
               <a href="https://github.com/TheBlackMini/GithubConfigSync/blob/main/addons/github-config-sync/DOCS.md" target="_blank" rel="noopener noreferrer">add-on documentation</a>.
             </p>
           </div>
-        </details>
+        </div>
         <div class="row" style="margin-top: 14px">
           <button id="syncBtn" class="secondary">Sync Now</button>
           <button id="cancelSyncBtn" class="secondary">Cancel Current Upload</button>
@@ -1037,11 +1037,6 @@
         downloadDiagnosticsBtn: document.getElementById("downloadDiagnosticsBtn"),
         cancelSyncBtn: document.getElementById("cancelSyncBtn"),
         cancelProcessBtn: document.getElementById("cancelProcessBtn"),
-        confirmModal: document.getElementById("confirmModal"),
-        confirmTitle: document.getElementById("confirmTitle"),
-        confirmBody: document.getElementById("confirmBody"),
-        confirmOkBtn: document.getElementById("confirmOkBtn"),
-        confirmCancelBtn: document.getElementById("confirmCancelBtn"),
         ignoreList: document.getElementById("ignoreList"),
         ignoreMeta: document.getElementById("ignoreMeta"),
         selectAllIgnore: document.getElementById("selectAllIgnore"),
@@ -1052,14 +1047,6 @@
         deviceFlowInfo: document.getElementById("deviceFlowInfo"),
         tokenBadge: document.getElementById("tokenBadge"),
         repoBadge: document.getElementById("repoBadge"),
-        authSection: document.getElementById("authSection"),
-        repoSection: document.getElementById("repoSection"),
-        scheduledSyncSection: document.getElementById("scheduledSyncSection"),
-        mountPointsSection: document.getElementById("mountPointsSection"),
-        gitignoreSection: document.getElementById("gitignoreSection"),
-        dryRunSection: document.getElementById("dryRunSection"),
-        docsSection: document.getElementById("docsSection"),
-        configCard: document.getElementById("configCard"),
         wizardSteps: document.getElementById("wizardSteps"),
         manageNav: document.getElementById("manageNav"),
         rerunWizardBtn: document.getElementById("rerunWizardBtn"),
@@ -1069,7 +1056,8 @@
         reviewSection: document.getElementById("reviewSection"),
         reviewSummary: document.getElementById("reviewSummary"),
         finishSetupBtn: document.getElementById("finishSetupBtn"),
-        configSections: Array.from(document.querySelectorAll("#configCard details.config-section")),
+        configSections: Array.from(document.querySelectorAll("#configCard .config-section")),
+        uiError: document.getElementById("uiError"),
       };
       let cachedRepos = [];
       let cachedIgnorePatterns = [];
@@ -1115,17 +1103,6 @@
         el.reviewSection.classList.toggle("hidden", step !== 5);
       }
 
-      function forceOpenCurrentSections() {
-        el.configSections.forEach((section) => {
-          if (String(section.dataset.step) === String(currentStep)) {
-            section.open = true;
-          }
-        });
-        if (currentStep === 5) {
-          el.reviewSection.open = true;
-        }
-      }
-
       function refreshReviewSummary() {
         const repo = el.repo.value.trim();
         const branch = el.branch.value.trim() || "main";
@@ -1154,7 +1131,6 @@
       function setWizardStep(step) {
         currentStep = Math.max(1, Math.min(5, step));
         showStepSections(currentStep);
-        forceOpenCurrentSections();
         el.wizardSteps.querySelectorAll(".step-dot").forEach((dot) => {
           const dotStep = Number(dot.dataset.step);
           dot.classList.toggle("active", dotStep === currentStep);
@@ -1185,7 +1161,6 @@
         el.configSections.forEach((section) => {
           section.classList.remove("hidden");
         });
-        collapseResolvedSections();
       }
 
       function setStatus(message, ok = true) {
@@ -1200,7 +1175,24 @@
       function showUiError(error) {
         const message = error && error.message ? error.message : String(error);
         setStatus(message, isExistingRepoConfirmationMessage(message));
+        showErrorBanner(message);
       }
+
+      function showErrorBanner(message) {
+        if (!el.uiError) {
+          return;
+        }
+        el.uiError.textContent = message;
+        el.uiError.classList.remove("hidden");
+      }
+
+      function clearErrorBanner() {
+        if (el.uiError) {
+          el.uiError.classList.add("hidden");
+        }
+      }
+
+      el.uiError?.addEventListener("click", clearErrorBanner);
 
       function setButtonBusy(button, busy, label) {
         if (!button) {
@@ -1256,25 +1248,6 @@
             ? `Syncing ${repo} at branch ${branch}.`
             : "No repository selected yet — use the repository section or define one under Advanced options.";
         }
-      }
-
-      function collapseResolvedSections() {
-        if (wizardActive) {
-          return;
-        }
-        // A token is present when the badge is "ok" (valid) or "warn"
-        // (rate_limited / transient check error). Only a missing or expired
-        // token should keep the auth section open.
-        const tokenOk = el.tokenBadge.classList.contains("ok") || el.tokenBadge.classList.contains("warn");
-        const repoOk = el.repoBadge.classList.contains("ok");
-        el.authSection.open = !tokenOk;
-        el.repoSection.open = !repoOk;
-
-        const autoSyncConfigured = el.autoSyncEnabled && el.autoSyncEnabled.checked;
-        el.scheduledSyncSection.open = !autoSyncConfigured;
-        el.mountPointsSection.open = false;
-        el.gitignoreSection.open = false;
-        el.dryRunSection.open = false;
       }
 
       function updateAuthMethodHelp() {
@@ -1460,7 +1433,7 @@
           repoMode === "existing" &&
           Boolean(confirmedFor) &&
           confirmedFor === (data.github_repository || "").trim();
-        el.authMethod.value = data.auth_method || "device_flow";
+        el.authMethod.value = data.auth_method || "github_app";
         el.githubClientId.value = data.github_client_id || "";
         el.githubToken.value = "";
         el.branch.value = data.github_branch || "main";
@@ -1513,22 +1486,18 @@
 
       async function loadManagedRepositories(strict = false) {
         try {
-          const showUnmanaged = Boolean(el.existingRepoRiskAck.checked);
-          const data = showUnmanaged
-            ? await fetchJson(apiUrl("/api/repos"))
-            : strict
-              ? await fetchJson(apiUrl("/api/repos/managed"))
-              : await fetchJson(apiUrl("/api/repos/cached"));
+          // Always list every repository the token can see (public and private),
+          // including ones not adopted yet. The managed/adopted flag still comes
+          // from the server. Generous timeout: the server lists each repo's
+          // contents to detect the add-on marker.
+          const data = await fetchJson(apiUrl("/api/repos"), { timeoutMs: 60000 });
           cachedRepos = data.repos || [];
           renderRepoPicker(cachedRepos);
-          if (el.repo.value) {
+          if (el.repo.value && cachedRepos.some((repo) => repo.full_name === el.repo.value)) {
             el.repoPicker.value = el.repo.value;
           }
           if (strict) {
-            setStatus(showUnmanaged ? `Loaded ${cachedRepos.length} repositories` : `Loaded ${cachedRepos.length} adopted repositories`);
-          }
-          if (!showUnmanaged && !strict && cachedRepos.length === 0) {
-            return loadManagedRepositories(true);
+            setStatus(`Loaded ${cachedRepos.length} repositories`);
           }
         } catch (error) {
           cachedRepos = [];
@@ -1601,6 +1570,11 @@
           setStatus("Ready");
         }
         updateSchedulerStatus(Boolean(data.scheduler && data.scheduler.enabled));
+        // Keep transient error pills visible: don't clobber them with "Ready"
+        // when the add-on is idle. "Running" always wins.
+        if (stateStatus !== "running" && el.status.classList.contains("err")) {
+          return;
+        }
       }
 
       async function refreshTokenHealth(force = false) {
@@ -1615,7 +1589,6 @@
           // before the client aborts so the live result actually reaches the UI.
           const data = await fetchJson(apiUrl("/api/token/health"), { timeoutMs: 30000 });
           updateTokenBadge(data.token_health);
-          collapseResolvedSections();
         } catch (_error) {
           // Keep showing the cached/checking state; the next trigger retries.
         }
@@ -1625,20 +1598,35 @@
         if (statusPollTimer) {
           return;
         }
+        const IDLE_INTERVAL_MS = 30000;
+        const ACTIVE_INTERVAL_MS = 2000;
+        let lastPoll = 0;
+        let syncActive = false;
+        function refresh() {
+          lastPoll = Date.now();
+          loadStatus()
+            .then(() => {
+              syncActive =
+                /running/i.test(el.progressStatus.textContent) || /running/i.test(el.status.textContent);
+            })
+            .catch(() => {});
+          refreshTokenHealth().catch(() => {});
+        }
         function tick() {
           // Pause polling when the page/iframe is not visible (e.g., user switched tabs/ingress panels)
           if (document.visibilityState === "hidden") {
             return;
           }
-          loadStatus().catch(() => {});
-          refreshTokenHealth().catch(() => {});
+          const interval = syncActive ? ACTIVE_INTERVAL_MS : IDLE_INTERVAL_MS;
+          if (Date.now() - lastPoll >= interval) {
+            refresh();
+          }
         }
-        statusPollTimer = window.setInterval(tick, 2000);
+        statusPollTimer = window.setInterval(tick, 1000);
         // Also re-check immediately when visibility changes back to visible
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState === "visible") {
-            loadStatus().catch(() => {});
-            refreshTokenHealth().catch(() => {});
+            refresh();
           }
         });
       }
@@ -1985,7 +1973,7 @@
         cancelCurrentSync().catch((error) => setStatus(error.message, false))
       );
       el.startDeviceBtn.addEventListener("click", () =>
-        startDeviceLogin().catch((error) => setStatus(error.message, false))
+        startDeviceLogin().catch(showUiError)
       );
       el.repoMode.forEach((item) =>
         item.addEventListener("change", () => {
@@ -2000,7 +1988,7 @@
         {
           setButtonBusy(el.loadManagedReposBtn, true, "Loading...");
           loadManagedRepositories(true)
-            .catch((error) => setStatus(error.message, false))
+            .catch(showUiError)
             .finally(() => setButtonBusy(el.loadManagedReposBtn, false));
         }
       );
@@ -2150,9 +2138,9 @@
         const statusResult = results[1];
         if (statusResult.status === "rejected" && statusResult.reason) {
           setStatus(statusResult.reason.message || String(statusResult.reason), false);
+          showErrorBanner(statusResult.reason.message || String(statusResult.reason));
           return;
         }
-        collapseResolvedSections();
         setStatus("Ready");
         const hasRepo = Boolean((el.repo && el.repo.value || "").trim());
         const tokenOk = el.tokenBadge.classList.contains("ok") || el.tokenBadge.classList.contains("warn");
